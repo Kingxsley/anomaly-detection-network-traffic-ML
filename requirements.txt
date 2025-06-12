@@ -1,7 +1,5 @@
-fastapi==0.115.4
-uvicorn==0.32.0
+streamlit==1.35.0
 pandas==2.2.2
 numpy==2.0.2
 tensorflow==2.18.0
 joblib==1.5.1
-pydantic==2.9.2
