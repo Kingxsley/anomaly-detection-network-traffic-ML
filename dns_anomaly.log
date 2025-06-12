@@ -1,0 +1,32 @@
+2025-06-10 16:14:07,452 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:16:07,821 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:18:58,330 INFO Loading model from autoencoder_dns.h5 and scaler from scaler_dns.pkl
+2025-06-10 16:18:58,387 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:23:53,890 INFO Loading model from autoencoder_dns.h5 and scaler from scaler_dns.pkl
+2025-06-10 16:23:53,927 WARNING Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+2025-06-10 16:23:53,930 ERROR Inference failed: No module named 'sklearn'
+2025-06-10 16:24:14,567 INFO Loading model from autoencoder_dns.h5 and scaler from scaler_dns.pkl
+2025-06-10 16:24:14,596 WARNING Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+2025-06-10 16:24:14,597 ERROR Inference failed: No module named 'sklearn'
+2025-06-10 16:33:24,584 INFO Loading model from autoencoder_dns.h5 and scaler from scaler_dns.pkl
+2025-06-10 16:33:24,641 WARNING Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+2025-06-10 16:33:24,999 ERROR Inference failed: No module named 'numpy._core'
+2025-06-10 16:36:30,108 INFO Loading model from autoencoder_dns.h5 and scaler from scaler_dns.pkl
+2025-06-10 16:36:30,163 WARNING Compiled the loaded model, but the compiled metrics have yet to be built. `model.compile_metrics` will be empty until you train or evaluate the model.
+2025-06-10 16:36:30,180 INFO Predicting for 10355 samples
+2025-06-10 16:40:31,716 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:40:31,716 ERROR Prediction failed: 500: Inference failed
+2025-06-10 16:41:09,640 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:41:09,640 ERROR Prediction failed: 500: Inference failed
+2025-06-10 16:45:12,493 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:45:12,493 ERROR Prediction failed: 500: Inference failed
+2025-06-10 16:45:46,344 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:45:46,344 ERROR Prediction failed: 500: Inference failed
+2025-06-10 16:46:37,141 ERROR Inference failed: Could not locate function 'mse'. Make sure custom classes are decorated with `@keras.saving.register_keras_serializable()`. Full object config: {'module': 'keras.metrics', 'class_name': 'function', 'config': 'mse', 'registered_name': 'mse'}
+2025-06-10 16:46:37,141 ERROR Prediction failed: 500: Inference failed
+2025-06-10 17:00:43,949 ERROR Inference failed: [Errno 2] Unable to synchronously open file (unable to open file: name = 'autoencoder_dns.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+2025-06-10 17:00:43,949 ERROR Prediction failed: 500: Inference failed
+2025-06-10 17:07:18,986 ERROR Inference failed: [Errno 2] Unable to synchronously open file (unable to open file: name = 'autoencoder_dns.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+2025-06-10 17:07:18,986 ERROR Prediction failed: 500: Inference failed
+2025-06-10 17:11:47,595 ERROR Inference failed: [Errno 2] Unable to synchronously open file (unable to open file: name = 'autoencoder_dns.h5', errno = 2, error message = 'No such file or directory', flags = 0, o_flags = 0)
+2025-06-10 17:11:47,595 ERROR Prediction failed: 500: Inference failed
