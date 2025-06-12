@@ -1,0 +1,4 @@
+import joblib
+
+threshold = 0.01
+joblib.dump(threshold, "threshold.pkl")
