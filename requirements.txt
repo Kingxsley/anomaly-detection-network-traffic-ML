@@ -1,6 +1,6 @@
 pandas>=2.0.0
 numpy>=1.24.0
-tensorflow>=2.10.0 #or tensorflow-macos>=2.10.0 for mac silicon
+tensorflow>=2.10.0
 scikit-learn>=1.2.0
 joblib>=1.2.0
 fastapi>=0.100.0
