@@ -10,13 +10,12 @@ from datetime import datetime
 from influxdb_client import InfluxDBClient
 from streamlit_autorefresh import st_autorefresh
 
-# InfluxDB config from secrets
+# InfluxDB config
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
 INFLUXDB_TOKEN = st.secrets["influxdb_token"]
 
-# Initialize SQLite DB for attack logging
 DB_PATH = "attacks.db"
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -27,7 +26,6 @@ def init_db():
         conn.commit()
 init_db()
 
-# Query latest DNS data from InfluxDB
 def query_latest_influx(n=100):
     try:
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
@@ -47,96 +45,90 @@ def query_latest_influx(n=100):
         st.error(f"InfluxDB error: {e}")
         return None
 
-# Dashboard UI
-def dashboard():
-    st.sidebar.title("⚙️ Controls")
-    st.sidebar.markdown(f"**User:** `Guest`")
-    if st.sidebar.button("Clear History"):
-        if "predictions" in st.session_state:
-            del st.session_state.predictions
-        st.experimental_rerun()
+# --- Main Dashboard ---
+if "predictions" not in st.session_state:
+    st.session_state.predictions = []
+if "highlight" not in st.session_state:
+    st.session_state.highlight = True
+if "live_page" not in st.session_state:
+    st.session_state.live_page = 0
 
-    if "predictions" not in st.session_state:
-        st.session_state.predictions = []
-    if "highlight" not in st.session_state:
-        st.session_state.highlight = True
-    if "live_page" not in st.session_state:
-        st.session_state.live_page = 0
+tabs = st.tabs(["🏠 Overview", "📡 Live Stream", "🛠 Manual Entry", "📈 Metrics & Alerts"])
 
-    tabs = st.tabs(["🏠 Home", "📡 Live Monitoring", "✍️ Manual Input", "📊 Analysis & Alerts"])
+with tabs[0]:
+    st.title("📊 DNS Anomaly Detection")
+    st.markdown("""
+    Welcome to the DNS Anomaly Detection Dashboard. This tool helps monitor real-time DNS traffic,
+    predict potential attacks, and analyze traffic trends with smart visualizations.
+    """)
 
-    with tabs[0]:
-        st.title("🔍 DNS Anomaly Detection Dashboard")
-        st.markdown("Welcome to the **DNS Traffic Monitoring and Anomaly Detection** platform.")
+with tabs[1]:
+    st_autorefresh(interval=10000, key="dns_autorefresh")
+    st.header("📡 Real-Time Monitoring")
+    data_list = query_latest_influx()
+    if data_list:
+        for data in data_list:
+            if "inter_arrival_time" in data and "dns_rate" in data:
+                result = {
+                    "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "inter_arrival_time": data["inter_arrival_time"],
+                    "dns_rate": data["dns_rate"],
+                    "reconstruction_error": np.random.rand(),
+                    "anomaly": np.random.choice([0, 1]),
+                    "label": None
+                }
+                st.session_state.predictions.append(result)
 
-    with tabs[1]:
-        st.header("📡 Real-Time DNS Monitoring")
-        data_list = query_latest_influx()
-        if data_list:
-            for data in data_list:
-                if "inter_arrival_time" in data and "dns_rate" in data:
-                    result = {
-                        "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": data["inter_arrival_time"],
-                        "dns_rate": data["dns_rate"],
-                        "reconstruction_error": np.random.rand(),
-                        "anomaly": np.random.choice([0, 1]),
-                        "label": None
-                    }
-                    st.session_state.predictions.append(result)
+    if st.session_state.predictions:
+        df = pd.DataFrame(st.session_state.predictions).sort_values("timestamp", ascending=False)
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        per_page = 100
+        total_pages = (len(df) - 1) // per_page + 1
+        page = st.session_state.live_page
+        start, end = page * per_page, (page + 1) * per_page
+        display_df = df.iloc[start:end]
 
-        if st.session_state.predictions:
-            df = pd.DataFrame(st.session_state.predictions).sort_values("timestamp", ascending=False)
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-            per_page = 100
-            total_pages = (len(df) - 1) // per_page + 1
-            page = st.session_state.live_page
-            start, end = page * per_page, (page + 1) * per_page
-            display_df = df.iloc[start:end]
-
-            if st.session_state.highlight:
-                def highlight(row): return ["background-color: red"] * len(row) if row["anomaly"] == 1 else [""] * len(row)
-                st.dataframe(display_df.style.apply(highlight, axis=1))
-            else:
-                st.dataframe(display_df)
-
-            st.markdown("---")
-            page_selector = st.number_input("Page", min_value=1, max_value=total_pages, value=page + 1, step=1) - 1
-            st.session_state.live_page = page_selector
-
-    with tabs[2]:
-        st.header("✍️ Manual Input")
-        col1, col2 = st.columns(2)
-        with col1:
-            inter_arrival_time = st.number_input("Inter Arrival Time", min_value=0.001, value=0.02)
-        with col2:
-            dns_rate = st.number_input("DNS Rate", min_value=0.0, value=5.0)
-        if st.button("Predict Anomaly"):
-            result = {
-                "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
-                "inter_arrival_time": inter_arrival_time,
-                "dns_rate": dns_rate,
-                "reconstruction_error": np.random.rand(),
-                "anomaly": np.random.choice([0, 1]),
-                "label": None
-            }
-            st.session_state.predictions.append(result)
-            st.success("Prediction completed and added to history.")
-
-    with tabs[3]:
-        st.header("📊 Analysis & Alerts")
-        if st.session_state.predictions:
-            df = pd.DataFrame(st.session_state.predictions)
-            df["timestamp"] = pd.to_datetime(df["timestamp"])
-            st.subheader("Anomaly Distribution")
-            pie = px.pie(df, names=df["anomaly"].map({0: "Normal", 1: "Attack"}), title="Anomaly Breakdown")
-            st.plotly_chart(pie)
-
-            st.subheader("Reconstruction Error Over Time")
-            line = px.line(df, x="timestamp", y="reconstruction_error", title="Reconstruction Error Timeline")
-            st.plotly_chart(line)
+        if st.session_state.highlight:
+            def highlight(row): return ["background-color: red"] * len(row) if row["anomaly"] == 1 else [""] * len(row)
+            st.dataframe(display_df.style.apply(highlight, axis=1))
         else:
-            st.info("No predictions available yet.")
+            st.dataframe(display_df)
 
-# Run the dashboard directly without login
-dashboard()
+        st.markdown("---")
+        page_selector = st.number_input("Page", min_value=1, max_value=total_pages, value=page + 1, step=1) - 1
+        st.session_state.live_page = page_selector
+
+with tabs[2]:
+    st.header("🛠 Manual Entry for Testing")
+    col1, col2 = st.columns(2)
+    with col1:
+        inter_arrival_time = st.number_input("Inter Arrival Time", min_value=0.001, value=0.02)
+    with col2:
+        dns_rate = st.number_input("DNS Rate", min_value=0.0, value=5.0)
+    if st.button("Predict Anomaly"):
+        result = {
+            "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "inter_arrival_time": inter_arrival_time,
+            "dns_rate": dns_rate,
+            "reconstruction_error": np.random.rand(),
+            "anomaly": np.random.choice([0, 1]),
+            "label": None
+        }
+        st.session_state.predictions.append(result)
+        st.success("Prediction complete. Result stored.")
+
+with tabs[3]:
+    st.header("📈 Analytical Dashboard")
+    if st.session_state.predictions:
+        df = pd.DataFrame(st.session_state.predictions)
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+
+        st.subheader("Anomaly Distribution")
+        pie = px.pie(df, names=df["anomaly"].map({0: "Normal", 1: "Attack"}), title="Anomaly Types")
+        st.plotly_chart(pie)
+
+        st.subheader("Reconstruction Error Timeline")
+        line = px.line(df, x="timestamp", y="reconstruction_error", title="Error Trends")
+        st.plotly_chart(line)
+    else:
+        st.info("No prediction data available.")
