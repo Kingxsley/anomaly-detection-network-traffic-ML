@@ -1,4 +1,5 @@
 import streamlit as st
+import re
 st.set_page_config(page_title="DNS Anomaly Detection Dashboard", layout="wide")
 
 import requests
@@ -17,7 +18,15 @@ from firebase_admin import credentials, auth
 # Initialize Firebase Admin SDK with service account from secrets
 if not firebase_admin._apps:
     cred_dict = dict(st.secrets["firebase_credentials"])
-    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+    # Replace literal \n with actual newlines in private_key
+    cred_dict["private_key"] = re.sub(r'\\n', '\n', cred_dict["private_key"])
+
+    # Debug print to verify private key format (remove in production)
+    st.write("Firebase private_key preview (first 50 chars):")
+    st.write(cred_dict["private_key"][:50])
+    st.write("Firebase private_key preview (last 50 chars):")
+    st.write(cred_dict["private_key"][-50:])
+
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
