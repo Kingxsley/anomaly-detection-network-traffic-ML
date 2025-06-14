@@ -13,16 +13,17 @@ from streamlit_autorefresh import st_autorefresh
 # Firebase imports
 import firebase_admin
 from firebase_admin import credentials, auth
-import streamlit as st
 
+# Initialize Firebase Admin SDK with service account from secrets
 if not firebase_admin._apps:
     cred_dict = dict(st.secrets["firebase_credentials"])
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
-# Firebase REST login
+# Firebase REST API key from secrets
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
+
 def firebase_login(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
     payload = {"email": email, "password": password, "returnSecureToken": True}
@@ -31,14 +32,13 @@ def firebase_login(email, password):
         return response.json()
     return None
 
-# InfluxDB config
+# InfluxDB config from secrets
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
 INFLUXDB_TOKEN = st.secrets["influxdb_token"]
 
-
-# Attack DB
+# Initialize SQLite DB for attack logging
 DB_PATH = "attacks.db"
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
@@ -49,7 +49,7 @@ def init_db():
         conn.commit()
 init_db()
 
-# Query InfluxDB
+# Query latest DNS data from InfluxDB
 def query_latest_influx(n=100):
     try:
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
@@ -69,7 +69,7 @@ def query_latest_influx(n=100):
         st.error(f"InfluxDB error: {e}")
         return None
 
-# Login page
+# Login Page
 def login_page():
     st.title("🔐 Login or Register")
     choice = st.radio("Select action", ["Login", "Register"])
@@ -84,7 +84,7 @@ def login_page():
                 if user:
                     st.session_state.user = user["email"]
                     st.success("Login successful!")
-                    st.rerun()
+                    st.experimental_rerun()
                 else:
                     st.error("Invalid credentials.")
 
@@ -106,13 +106,14 @@ def login_page():
                     except Exception as e:
                         st.error(f"Registration failed: {e}")
 
+# Dashboard UI
 def dashboard():
     st.sidebar.title("⚙️ Controls")
     st.sidebar.markdown(f"**User:** `{st.session_state.user}`")
     if st.sidebar.button("Logout"):
         for key in list(st.session_state.keys()):
             del st.session_state[key]
-        st.rerun()
+        st.experimental_rerun()
 
     if "predictions" not in st.session_state:
         st.session_state.predictions = []
@@ -196,7 +197,7 @@ def dashboard():
         else:
             st.info("No predictions available yet.")
 
-# Routing
+# Routing logic
 if "user" not in st.session_state:
     login_page()
 else:
