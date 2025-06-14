@@ -13,12 +13,16 @@ from streamlit_autorefresh import st_autorefresh
 # Firebase imports
 import firebase_admin
 from firebase_admin import credentials, auth
+import streamlit as st
 
 if not firebase_admin._apps:
-    cred_dict = dict(st.secrets["firebase_credentials"])  # shallow copy to plain dict
-    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")  # fix newlines
+    cred_dict = dict(st.secrets["firebase_credentials"])
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
+
+FIREBASE_API_KEY = st.secrets["firebase_api_key"]
+
 
 
 
