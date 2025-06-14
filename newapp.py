@@ -16,7 +16,7 @@ from firebase_admin import credentials, auth
 
 # Load Firebase credentials
 if not firebase_admin._apps:
-    cred = credentials.Certificate(dict(st.secrets["firebase_credentials"]))
+    cred = credentials.Certificate(st.secrets["firebase_credentials"])
     firebase_admin.initialize_app(cred)
 
 # Firebase REST login
