@@ -11,15 +11,15 @@ from influxdb_client import InfluxDBClient
 from streamlit_autorefresh import st_autorefresh
 
 # Firebase imports
-import copy
 import firebase_admin
 from firebase_admin import credentials, auth
 
 if not firebase_admin._apps:
-    cred_dict = copy.deepcopy(st.secrets["firebase_credentials"])  # Make a copy
+    cred_dict = dict(st.secrets["firebase_credentials"])  # shallow copy to plain dict
     cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")  # fix newlines
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
+
 
 
 # Firebase REST login
