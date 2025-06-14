@@ -18,28 +18,22 @@ from firebase_admin import credentials, auth
 # Initialize Firebase Admin SDK with service account from secrets
 if not firebase_admin._apps:
     cred_dict = dict(st.secrets["firebase_credentials"])
-
-    # Fix PEM formatting issues in private_key
-    key = cred_dict["private_key"]
-    # Ensure "BEGIN PRIVATE KEY" header ends with a newline
-    key = re.sub(r"-----BEGIN PRIVATE KEY-----\s*", "-----BEGIN PRIVATE KEY-----\n", key)
-    # Convert escaped newlines to actual newlines
-    key = key.replace("\\n", "\n")
-    # Ensure "END PRIVATE KEY" header starts on a new line
-    key = re.sub(r"\s*-----END PRIVATE KEY-----", "\n-----END PRIVATE KEY-----", key)
-    cred_dict["private_key"] = key
-
-    # Debug output (optional, remove or comment out for production)
+    
+    # No replacement of \n here assuming private_key has actual newlines in secrets.toml
+    # Optional debug prints (remove or comment out in production)
     st.write("Firebase private_key preview (first 50 chars):")
     st.write(cred_dict["private_key"][:50])
     st.write("Firebase private_key preview (last 50 chars):")
     st.write(cred_dict["private_key"][-50:])
-
+    
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
 # Firebase REST API key from secrets
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
+
+# ... rest of your code unchanged ...
+
 
 def firebase_login(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
