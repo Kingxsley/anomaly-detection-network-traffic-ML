@@ -14,7 +14,7 @@ from streamlit_autorefresh import st_autorefresh
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
-INFLUXDB_TOKEN = st.secrets["influxdb_token"]
+INFLUXDB_TOKEN = "6gjE97dCC24hgOgWNmRXPqOS0pfc0pMSYeh5psL8e5u2T8jGeV1F17CU-U1z05if0jfTEmPRW9twNPSXN09SRQ=="
 
 DB_PATH = "attacks.db"
 def init_db():
