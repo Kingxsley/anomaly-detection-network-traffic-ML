@@ -14,10 +14,14 @@ from streamlit_autorefresh import st_autorefresh
 import firebase_admin
 from firebase_admin import credentials, auth
 
-# Load Firebase credentials
+# Load Firebase credentials from Streamlit secrets
 if not firebase_admin._apps:
-    cred = credentials.Certificate(st.secrets["firebase_credentials"])
+    cred_dict = st.secrets["firebase_credentials"]
+    # Replace literal \n with actual newlines in the private_key
+    cred_dict["private_key"] = cred_dict["private_key"].replace("\\n", "\n")
+    cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
+
 
 # Firebase REST login
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
