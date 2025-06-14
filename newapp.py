@@ -21,11 +21,6 @@ if not firebase_admin._apps:
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
-FIREBASE_API_KEY = st.secrets["firebase_api_key"]
-
-
-
-
 # Firebase REST login
 FIREBASE_API_KEY = st.secrets["firebase_api_key"]
 def firebase_login(email, password):
