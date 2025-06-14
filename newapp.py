@@ -19,13 +19,15 @@ from firebase_admin import credentials, auth
 if not firebase_admin._apps:
     cred_dict = dict(st.secrets["firebase_credentials"])
     
-    # No replacement of \n here assuming private_key has actual newlines in secrets.toml
-    # Optional debug prints (remove or comment out in production)
+    # Replace literal backslash-n with actual newline characters
+    cred_dict["private_key"] = re.sub(r'\\n', '\n', cred_dict["private_key"])
+
+    # Optional debug prints to verify formatting:
     st.write("Firebase private_key preview (first 50 chars):")
-    st.write(cred_dict["private_key"][:50])
+    st.write(repr(cred_dict["private_key"][:50]))
     st.write("Firebase private_key preview (last 50 chars):")
-    st.write(cred_dict["private_key"][-50:])
-    
+    st.write(repr(cred_dict["private_key"][-50:]))
+
     cred = credentials.Certificate(cred_dict)
     firebase_admin.initialize_app(cred)
 
