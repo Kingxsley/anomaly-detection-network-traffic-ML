@@ -15,6 +15,7 @@ INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
 INFLUXDB_TOKEN = "6gjE97dCC24hgOgWNmRXPqOS0pfc0pMSYeh5psL8e5u2T8jGeV1F17CU-U1z05if0jfTEmPRW9twNPSXN09SRQ=="
+DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7"
 
 DB_PATH = "attacks.db"
 def init_db():
@@ -45,11 +46,55 @@ def query_latest_influx(n=100):
         st.error(f"InfluxDB error: {e}")
         return None
 
-# --- Main Dashboard ---
+def send_discord_alert(result):
+    src_ip = result.get("source_ip", "N/A")
+    dst_ip = result.get("dest_ip", "N/A")
+    timestamp = result.get("timestamp", "N/A")
+    dns_rate = result.get("dns_rate", "N/A")
+    iat = result.get("inter_arrival_time", "N/A")
+    error = result.get("reconstruction_error", 0.0)
+
+    message = {
+        "content": (
+            f"🚨 **DNS Anomaly Detected!**\n"
+            f"**Timestamp:** {timestamp}\n"
+            f"**Source IP:** {src_ip}\n"
+            f"**Destination IP:** {dst_ip}\n"
+            f"**DNS Rate:** {dns_rate}\n"
+            f"**Inter-arrival Time:** {iat}\n"
+            f"**Reconstruction Error:** {float(error):.6f}"
+        )
+    }
+    try:
+        requests.post(DISCORD_WEBHOOK, json=message, timeout=5)
+    except Exception as e:
+        st.warning(f"Discord alert failed: {e}")
+
+
+# --- Sidebar ---
+st.sidebar.header("Settings")
+alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
+highlight_enabled = st.sidebar.checkbox("Highlight Anomalies", value=True)
+highlight_color_option = st.sidebar.selectbox(
+    "Anomaly Highlight Color",
+    options={
+        "Red": "#FF4B4B",
+        "Orange": "#FFA500",
+        "Yellow": "#FFFF00",
+        "Green": "#00FF00",
+        "Blue": "#1E90FF",
+        "Purple": "#800080"
+    },
+    index=0,
+    format_func=lambda x: x
+)
+highlight_color = highlight_color_option
+
+# --- Session State ---
 if "predictions" not in st.session_state:
     st.session_state.predictions = []
 if "highlight" not in st.session_state:
-    st.session_state.highlight = True
+    st.session_state.highlight = highlight_enabled
 if "live_page" not in st.session_state:
     st.session_state.live_page = 0
 
@@ -71,6 +116,8 @@ with tabs[1]:
             if "inter_arrival_time" in data and "dns_rate" in data:
                 result = {
                     "timestamp": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    "source_ip": data.get("source_ip", "N/A"),
+                    "dest_ip": data.get("dest_ip", "N/A"),
                     "inter_arrival_time": data["inter_arrival_time"],
                     "dns_rate": data["dns_rate"],
                     "reconstruction_error": np.random.rand(),
@@ -78,6 +125,8 @@ with tabs[1]:
                     "label": None
                 }
                 st.session_state.predictions.append(result)
+                if alerts_enabled and result["anomaly"] == 1:
+                    send_discord_alert(result)
 
     if st.session_state.predictions:
         df = pd.DataFrame(st.session_state.predictions).sort_values("timestamp", ascending=False)
@@ -89,7 +138,8 @@ with tabs[1]:
         display_df = df.iloc[start:end]
 
         if st.session_state.highlight:
-            def highlight(row): return ["background-color: red"] * len(row) if row["anomaly"] == 1 else [""] * len(row)
+            def highlight(row):
+                return [f"background-color: {highlight_color}"] * len(row) if row["anomaly"] == 1 else [""] * len(row)
             st.dataframe(display_df.style.apply(highlight, axis=1))
         else:
             st.dataframe(display_df)
@@ -115,6 +165,8 @@ with tabs[2]:
             "label": None
         }
         st.session_state.predictions.append(result)
+        if alerts_enabled and result["anomaly"] == 1:
+            send_discord_alert(result)
         st.success("Prediction complete. Result stored.")
 
 with tabs[3]:
