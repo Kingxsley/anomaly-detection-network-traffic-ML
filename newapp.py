@@ -1,5 +1,4 @@
 import streamlit as st
-import re
 st.set_page_config(page_title="DNS Anomaly Detection Dashboard", layout="wide")
 
 import requests
@@ -10,40 +9,6 @@ import sqlite3
 from datetime import datetime
 from influxdb_client import InfluxDBClient
 from streamlit_autorefresh import st_autorefresh
-
-# Firebase imports
-import firebase_admin
-from firebase_admin import credentials, auth
-
-# Initialize Firebase Admin SDK with service account from secrets
-if not firebase_admin._apps:
-    cred_dict = dict(st.secrets["firebase_credentials"])
-    
-    # Replace literal backslash-n with actual newline characters
-    cred_dict["private_key"] = re.sub(r'\\n', '\n', cred_dict["private_key"])
-
-    # Optional debug prints to verify formatting:
-    st.write("Firebase private_key preview (first 50 chars):")
-    st.write(repr(cred_dict["private_key"][:50]))
-    st.write("Firebase private_key preview (last 50 chars):")
-    st.write(repr(cred_dict["private_key"][-50:]))
-
-    cred = credentials.Certificate(cred_dict)
-    firebase_admin.initialize_app(cred)
-
-# Firebase REST API key from secrets
-FIREBASE_API_KEY = st.secrets["firebase_api_key"]
-
-# ... rest of your code unchanged ...
-
-
-def firebase_login(email, password):
-    url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
-    payload = {"email": email, "password": password, "returnSecureToken": True}
-    response = requests.post(url, json=payload)
-    if response.status_code == 200:
-        return response.json()
-    return None
 
 # InfluxDB config from secrets
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
@@ -82,50 +47,13 @@ def query_latest_influx(n=100):
         st.error(f"InfluxDB error: {e}")
         return None
 
-# Login Page
-def login_page():
-    st.title("🔐 Login or Register")
-    choice = st.radio("Select action", ["Login", "Register"])
-
-    if choice == "Login":
-        with st.form("login_form"):
-            email = st.text_input("Email")
-            password = st.text_input("Password", type="password")
-            submit = st.form_submit_button("Login")
-            if submit:
-                user = firebase_login(email, password)
-                if user:
-                    st.session_state.user = user["email"]
-                    st.success("Login successful!")
-                    st.experimental_rerun()
-                else:
-                    st.error("Invalid credentials.")
-
-    elif choice == "Register":
-        with st.form("register_form"):
-            new_email = st.text_input("New Email")
-            new_password = st.text_input("New Password", type="password")
-            confirm_password = st.text_input("Confirm Password", type="password")
-            submit = st.form_submit_button("Register")
-            if submit:
-                if new_password != confirm_password:
-                    st.error("Passwords do not match.")
-                elif len(new_password) < 6:
-                    st.error("Password must be at least 6 characters.")
-                else:
-                    try:
-                        auth.create_user(email=new_email, password=new_password)
-                        st.success("Registration successful! You can now log in.")
-                    except Exception as e:
-                        st.error(f"Registration failed: {e}")
-
 # Dashboard UI
 def dashboard():
     st.sidebar.title("⚙️ Controls")
-    st.sidebar.markdown(f"**User:** `{st.session_state.user}`")
-    if st.sidebar.button("Logout"):
-        for key in list(st.session_state.keys()):
-            del st.session_state[key]
+    st.sidebar.markdown(f"**User:** `Guest`")
+    if st.sidebar.button("Clear History"):
+        if "predictions" in st.session_state:
+            del st.session_state.predictions
         st.experimental_rerun()
 
     if "predictions" not in st.session_state:
@@ -210,8 +138,5 @@ def dashboard():
         else:
             st.info("No predictions available yet.")
 
-# Routing logic
-if "user" not in st.session_state:
-    login_page()
-else:
-    dashboard()
+# Run the dashboard directly without login
+dashboard()
