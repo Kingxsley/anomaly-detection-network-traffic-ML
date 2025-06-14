@@ -16,11 +16,11 @@ from firebase_admin import credentials, auth
 
 # Load Firebase credentials
 if not firebase_admin._apps:
-    cred = credentials.Certificate("firebase_credentials.json")
+    cred = credentials.Certificate(dict(st.secrets["firebase_credentials"]))
     firebase_admin.initialize_app(cred)
 
 # Firebase REST login
-FIREBASE_API_KEY = "AIzaSyBYfbg6GmkKHO0r_Y4TEMVyvzxlRQ1ZTTY"
+FIREBASE_API_KEY = st.secrets["firebase_api_key"]
 def firebase_login(email, password):
     url = f"https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key={FIREBASE_API_KEY}"
     payload = {"email": email, "password": password, "returnSecureToken": True}
@@ -33,7 +33,8 @@ def firebase_login(email, password):
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
-INFLUXDB_TOKEN = "6gjE97dCC24hgOgWNmRXPqOS0pfc0pMSYeh5psL8e5u2T8jGeV1F17CU-U1z05if0jfTEmPRW9twNPSXN09SRQ=="
+INFLUXDB_TOKEN = st.secrets["influxdb_token"]
+
 
 # Attack DB
 DB_PATH = "attacks.db"
