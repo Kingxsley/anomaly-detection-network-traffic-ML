@@ -41,7 +41,14 @@ def query_latest_influx(n=100):
             tables = client.query_api().query(query)
             if not tables or len(tables[0].records) == 0:
                 return None
-            return [record.values for record in tables[0].records]
+            return [
+                {
+                    **record.values,
+                    "source_ip": record.values.get("source_ip", record.values.get("src_ip", "N/A")),
+                    "dest_ip": record.values.get("dest_ip", record.values.get("dst_ip", "N/A"))
+                }
+                for record in tables[0].records
+            ]
     except Exception as e:
         st.error(f"InfluxDB error: {e}")
         return None
