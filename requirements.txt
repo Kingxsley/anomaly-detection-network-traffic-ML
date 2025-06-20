@@ -7,3 +7,4 @@ plotly
 influxdb-client
 streamlit-autorefresh
 scikit-learn
+sqlitecloud
