@@ -11,11 +11,10 @@ from influxdb_client import InfluxDBClient
 from streamlit_autorefresh import st_autorefresh
 
 # InfluxDB config
-INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-INFLUXDB_ORG = "Anormally Detection"
-INFLUXDB_BUCKET = "realtime_dns"
-INFLUXDB_TOKEN = "6gjE97dCC24hgOgWNmRXPqOS0pfc0pMSYeh5psL8e5u2T8jGeV1F17CU-U1z05if0jfTEmPRW9twNPSXN09SRQ=="
-DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7"
+DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
+INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
+INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
+SQLITECLOUD_URL = st.secrets["SQLITECLOUD_URL"]
 
 DB_PATH = "attacks.db"
 def init_db():
