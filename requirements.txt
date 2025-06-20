@@ -6,3 +6,4 @@ numpy>=1.24.0
 plotly
 influxdb-client
 streamlit-autorefresh
+scikit-learn
