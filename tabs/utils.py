@@ -1,5 +1,6 @@
 # --- main app.py ---
 import streamlit as st
+import os
 import pandas as pd  # ✅ Added missing import
 import requests
 from datetime import datetime, timedelta
@@ -7,7 +8,7 @@ from influxdb_client import InfluxDBClient
 
 # --- Constants ---
 API_URL = "https://mizzony-dns-anomalies-detection.hf.space/predict"
-DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7"
+DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
 INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
 INFLUXDB_ORG = "Anormally Detection"
 INFLUXDB_BUCKET = "realtime_dns"
