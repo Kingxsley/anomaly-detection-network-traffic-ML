@@ -7,13 +7,11 @@ from datetime import datetime, timedelta
 from influxdb_client import InfluxDBClient
 
 # --- Constants ---
-API_URL = "https://mizzony-dns-anomalies-detection.hf.space/predict"
-DISCORD_WEBHOOK = os.getenv("DISCORD_WEBHOOK")
-INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-INFLUXDB_ORG = "Anormally Detection"
-INFLUXDB_BUCKET = "realtime_dns"
-INFLUXDB_TOKEN = "6gjE97dCC24hgOgWNmRXPqOS0pfc0pMSYeh5psL8e5u2T8jGeV1F17CU-U1z05if0jfTEmPRW9twNPSXN09SRQ=="
-SQLITECLOUD_URL = "sqlitecloud://cfolwawehk.g2.sqlite.cloud:8860/anomaly?apikey=77cz3yvotfOw3EgNIM9xPLAWaajazSyxcnCWvvbxFEA"
+DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
+API_URL = st.secrets["API_URL"]
+INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
+INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
+SQLITECLOUD_URL = st.secrets["SQLITECLOUD_URL"]
 
 # --- Utility: Discord Alert ---
 def send_discord_alert(result):
