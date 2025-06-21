@@ -13,6 +13,7 @@ from streamlit_autorefresh import st_autorefresh
 # InfluxDB config
 DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
 INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
+INFLUXDB_ORG = st.secrets["INFLUXDB_ORG"]
 INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
 SQLITECLOUD_URL = st.secrets["SQLITECLOUD_URL"]
 
