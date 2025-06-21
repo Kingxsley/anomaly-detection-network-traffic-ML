@@ -7,12 +7,15 @@ from datetime import datetime, timedelta
 from influxdb_client import InfluxDBClient
 
 # --- Constants ---
-DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
+
 API_URL = st.secrets["API_URL"]
+DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
 INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
-INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
 INFLUXDB_ORG = st.secrets["INFLUXDB_ORG"]
+INFLUXDB_BUCKET = st.secrets["INFLUXDB_BUCKET"]
+INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
 SQLITECLOUD_URL = st.secrets["SQLITECLOUD_URL"]
+
 
 # --- Utility: Discord Alert ---
 def send_discord_alert(result):
