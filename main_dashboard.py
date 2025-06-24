@@ -33,16 +33,16 @@ if "attacks" not in st.session_state:
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
 with tabs[0]:
-    overview.render(time_range, time_range_query_map)  # Overview for DoS
+    overview.render(time_range, time_range_query_map)
 
 with tabs[1]:
-    live_stream.render(thresh, highlight_color, alerts_enabled)  # Live Stream for DoS
+    live_stream.render(thresh, highlight_color, alerts_enabled)
 
 with tabs[2]:
-    manual_entry.render()  # Manual Entry for DoS
+    manual_entry.render()
 
 with tabs[3]:
-    metrics.render(thresh)  # Metrics for DoS
+    metrics.render(thresh)
 
 with tabs[4]:
-    historical.render(thresh, highlight_color)  # Historical Data for DoS
+    historical.render(thresh, highlight_color)
