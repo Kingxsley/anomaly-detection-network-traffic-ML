@@ -8,13 +8,13 @@ from influxdb_client import InfluxDBClient
 
 # --- Constants ---
 
-API_URL = st.secrets["API_URL"]
-DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
-INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
-INFLUXDB_ORG = st.secrets["INFLUXDB_ORG"]
-INFLUXDB_BUCKET = st.secrets["INFLUXDB_BUCKET"]
-INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
-SQLITECLOUD_URL = st.secrets["SQLITECLOUD_URL"]
+API_URL = st.secrets.get("API_URL", "")
+DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "")
+INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
+INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "")
+INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "")
+INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
+SQLITECLOUD_URL = st.secrets.get("SQLITECLOUD_URL", "")
 
 
 # --- Utility: Discord Alert ---
