@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime
-from tabs.utils import API_URL
+from tabs.dns.utils import API_URL
 
 
 def render():
