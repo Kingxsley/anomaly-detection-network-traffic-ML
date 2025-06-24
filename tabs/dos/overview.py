@@ -1,22 +1,15 @@
+# tabs/dos/overview.py
 import streamlit as st
-import os
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
 from streamlit_autorefresh import st_autorefresh
-from influxdb_client import InfluxDBClient
-import requests
-import sqlitecloud
-import warnings
+from tabs.dos.utils import load_predictions_from_sqlitecloud
 
-# ✅ FIXED: Corrected import
-from tabs.dos.utils import load_predictions_from_sqlitecloud, send_discord_alert
-
-def render_overview(api_url, influx_measurement):
-    st_autorefresh(interval=60000, key="overview_refresh")
-    st.subheader("DOS Anomaly Detection Overview")
-    df = load_predictions_from_sqlitecloud(time_window="-24h")
+def render(time_range, time_range_query_map):
+    st_autorefresh(interval=30000, key="overview_refresh")
+    st.title("DOS Anomaly Detection Overview")
+    query_duration = time_range_query_map.get(time_range, "-24h")
+    df = load_predictions_from_sqlitecloud(time_window=query_duration)
 
     if not df.empty:
         total_predictions = len(df)
@@ -46,13 +39,25 @@ def render_overview(api_url, influx_measurement):
         st.markdown("### Top Source IPs")
         ip_counts = df[df["is_anomaly"] == 1]["source_ip"].value_counts().nlargest(10).reset_index()
         ip_counts.columns = ["source_ip", "count"]
-        fig_ip = px.bar(ip_counts, x="source_ip", y="count", labels={"source_ip": "Source IP", "count": "Anomaly Count"}, text_auto=True)
+        fig_ip = px.bar(
+            ip_counts,
+            x="source_ip",
+            y="count",
+            labels={"source_ip": "Source IP", "count": "Anomaly Count"},
+            text_auto=True
+        )
         st.plotly_chart(fig_ip, use_container_width=True)
 
         st.markdown("### Top Destination IPs")
         dest_counts = df[df["is_anomaly"] == 1]["dest_ip"].value_counts().nlargest(10).reset_index()
         dest_counts.columns = ["dest_ip", "count"]
-        fig_dest = px.bar(dest_counts, x="dest_ip", y="count", labels={"dest_ip": "Destination IP", "count": "Anomaly Count"}, text_auto=True)
+        fig_dest = px.bar(
+            dest_counts,
+            x="dest_ip",
+            y="count",
+            labels={"dest_ip": "Destination IP", "count": "Anomaly Count"},
+            text_auto=True
+        )
         st.plotly_chart(fig_dest, use_container_width=True)
 
         st.markdown("### Anomaly Score Over Time")
