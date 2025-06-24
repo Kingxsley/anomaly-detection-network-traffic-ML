@@ -31,6 +31,14 @@ def render(time_range, time_range_query_map):
         summary_cols[1].metric("Max Reconstruction Error", f"{max_error:.4f}")
         summary_cols[2].metric("Min Reconstruction Error", f"{min_error:.4f}")
 
+        st.markdown("### Time of Most Attacks")
+        attack_df = df[df["is_anomaly"] == 1].copy()
+        attack_df["hour"] = pd.to_datetime(attack_df["timestamp"]).dt.hour
+        hourly_counts = attack_df["hour"].value_counts().sort_index().reset_index()
+        hourly_counts.columns = ["Hour", "Attack Count"]
+        fig_hour = px.bar(hourly_counts, x="Hour", y="Attack Count", labels={"Hour": "Hour of Day"})
+        st.plotly_chart(fig_hour, use_container_width=True)
+
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
         ip_counts.columns = ["source_ip", "count"]
