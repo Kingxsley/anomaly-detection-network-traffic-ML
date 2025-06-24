@@ -45,7 +45,7 @@ def render(time_range, time_range_query_map):
             attack_df = df[df["is_anomaly"] == 1].copy()
             avg_score = attack_df["anomaly_score"].mean()
             max_score = attack_df["anomaly_score"].max()
-            top_sources = attack_df["source_ip"].value_counts().head(3).reset_index()
+            top_sources = attack_df["source_ip"].value_counts().reset_index()
             top_sources.columns = ["Source IP", "Anomaly Count"]
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
@@ -56,18 +56,18 @@ def render(time_range, time_range_query_map):
                 st.metric("Peak Hour of Attacks", f"{peak_hour}:00")
 
             with col2:
-                fig = go.Figure(data=[
-                    go.Bar(
-                        x=top_sources["Source IP"],
-                        y=top_sources["Anomaly Count"],
-                        marker_color="crimson"
-                    )
-                ])
-                fig.update_layout(
+                top_sources_sorted = top_sources.sort_values(by="Anomaly Count", ascending=False)
+                fig = px.bar(
+                    top_sources_sorted.head(10),
+                    x="Source IP",
+                    y="Anomaly Count",
                     title="Top Source IPs by Anomaly Count",
-                    xaxis_title="Source IP",
-                    yaxis_title="Count",
-                    height=300
+                    labels={"Anomaly Count": "Count"}
+                )
+                fig.update_layout(
+                    xaxis_tickangle=-45,
+                    height=350,
+                    margin=dict(t=40, b=20),
                 )
                 st.plotly_chart(fig, use_container_width=True)
         else:
