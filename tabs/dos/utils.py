@@ -19,7 +19,6 @@ SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
 SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "dos")
 SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
 
-
 def send_discord_alert(result):
     message = {
         "content": (
@@ -36,7 +35,6 @@ def send_discord_alert(result):
         requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
-
 
 def log_to_sqlitecloud(record, db_path=SQLITE_DB):
     try:
@@ -70,7 +68,6 @@ def log_to_sqlitecloud(record, db_path=SQLITE_DB):
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
-
 def get_dos_data(measurement):
     try:
         if not INFLUXDB_URL:
@@ -99,3 +96,19 @@ def get_dos_data(measurement):
     except Exception as e:
         st.warning(f"Failed to fetch live DOS data from InfluxDB: {e}")
         return []
+
+def load_predictions_from_sqlitecloud(time_window="-24h"):
+    try:
+        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
+        query = f"""
+            SELECT * FROM dos_anomalies
+            WHERE timestamp >= datetime('now', '{time_window}')
+            ORDER BY timestamp DESC
+        """
+        df = pd.read_sql_query(query, conn)
+        conn.close()
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        return df
+    except Exception as e:
+        print(f"[SQLite Load Error]: {e}")
+        return pd.DataFrame()
