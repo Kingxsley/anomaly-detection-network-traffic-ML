@@ -5,7 +5,9 @@ from layout import render_dashboard
 # --- Sidebar Dashboard Selector ---
 dashboard_choice = st.sidebar.radio("Select Dashboard", ["DNS", "DOS"], index=0)
 
+# Call st.set_page_config here
 if dashboard_choice == "DNS":
+    st.set_page_config(page_title="DNS Anomaly Detection Dashboard", layout="wide")
     render_dashboard(
         title="DNS Anomaly Detection Dashboard",
         api_url="https://mizzony-dns-anomalies-detection.hf.space/predict",
@@ -14,6 +16,7 @@ if dashboard_choice == "DNS":
         mode="dns"
     )
 elif dashboard_choice == "DOS":
+    st.set_page_config(page_title="DOS Anomaly Detection Dashboard", layout="wide")
     render_dashboard(
         title="DOS Anomaly Detection Dashboard",
         api_url="https://violabirech-dos-anomalies-detection.hf.space/predict",
