@@ -2,7 +2,14 @@ import streamlit as st
 from tabs import overview, live_stream, manual_entry, metrics, historical
 
 # Sidebar for selecting the dashboard type (DNS or DOS)
-dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0)
+if "DASHBOARD_TYPE" not in st.session_state:
+    st.session_state.DASHBOARD_TYPE = "DNS"  # Default to DNS if not set
+
+# Sidebar for switching between DNS and DOS
+dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0 if st.session_state.DASHBOARD_TYPE == "DNS" else 1)
+
+# Set the selected dashboard type in session state
+st.session_state.DASHBOARD_TYPE = dashboard_type
 
 # Sidebar for settings and configurations
 st.sidebar.header("Settings")
@@ -16,9 +23,6 @@ alerts_enabled = st.sidebar.checkbox("Enable Alerts", value=True)
 # Add any additional settings (e.g., threshold, highlight color, etc.)
 threshold = st.sidebar.slider("Anomaly Detection Threshold", 0.0, 1.0, 0.5, 0.01)
 highlight_color = st.sidebar.color_picker("Highlight Color", value="#FFFF00")
-
-# Set the selected dashboard type in Streamlit's secrets dynamically
-st.secrets["DASHBOARD_TYPE"] = dashboard_type
 
 # Display the selected dashboard in the main content area
 if dashboard_type == "DNS":
