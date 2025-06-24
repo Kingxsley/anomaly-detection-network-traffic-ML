@@ -49,27 +49,28 @@ def render(time_range, time_range_query_map):
             top_sources.columns = ["Source IP", "Anomaly Count"]
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
-            col1, col2 = st.columns(2)
-            with col1:
-                st.metric("Avg. Reconstruction Error", f"{avg_score:.4f}")
-                st.metric("Max. Reconstruction Error", f"{max_score:.4f}")
-                st.metric("Peak Hour of Attacks", f"{peak_hour}:00")
+            st.markdown(f"""
+                <div style='padding:10px; border:1px solid #ccc; border-radius:10px; background:#f9f9f9;'>
+                    <strong>Avg. Reconstruction Error:</strong> {avg_score:.4f} &nbsp;|&nbsp;
+                    <strong>Max. Reconstruction Error:</strong> {max_score:.4f} &nbsp;|&nbsp;
+                    <strong>Peak Hour of Attacks:</strong> {peak_hour}:00
+                </div>
+            """, unsafe_allow_html=True)
 
-            with col2:
-                top_sources_sorted = top_sources.sort_values(by="Anomaly Count", ascending=False)
-                fig = px.bar(
-                    top_sources_sorted.head(10),
-                    x="Source IP",
-                    y="Anomaly Count",
-                    title="Top Source IPs by Anomaly Count",
-                    labels={"Anomaly Count": "Count"}
-                )
-                fig.update_layout(
-                    xaxis_tickangle=-45,
-                    height=350,
-                    margin=dict(t=40, b=20),
-                )
-                st.plotly_chart(fig, use_container_width=True)
+            st.markdown("### Top Source IPs by Anomaly Count")
+            top_sources_sorted = top_sources.sort_values(by="Anomaly Count", ascending=False)
+            fig = px.bar(
+                top_sources_sorted.head(10),
+                x="Source IP",
+                y="Anomaly Count",
+                labels={"Anomaly Count": "Count"},
+                height=350
+            )
+            fig.update_layout(
+                xaxis_tickangle=-45,
+                margin=dict(t=40, b=20),
+            )
+            st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No attacks recorded in the selected time window.")
 
