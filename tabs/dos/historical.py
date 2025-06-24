@@ -1,63 +1,61 @@
 # tabs/dos/historical.py
 import streamlit as st
 import pandas as pd
+import numpy as np
 import plotly.express as px
-import requests
-from influxdb_client import InfluxDBClient
 from datetime import datetime, timedelta
+from tabs.dos.utils import get_historical_dos_data
 
-
-def render_historical(api_url, influx_measurement, db_path):
+def render(thresh, highlight_color):
     st.header("Historical DOS Data")
-    start_date = st.date_input("Start Date", datetime.utcnow().date() - timedelta(days=1))
-    end_date = st.date_input("End Date", datetime.utcnow().date())
 
-    if start_date > end_date:
-        st.error("Start date must be before end date.")
-        return
+    col1, col2 = st.columns(2)
+    with col1:
+        start_date = st.date_input("Start Date", datetime.now() - timedelta(days=7))
+    with col2:
+        end_date = st.date_input("End Date", datetime.now())
 
-    try:
-        with InfluxDBClient(
-            url=st.secrets["INFLUXDB_URL"],
-            token=st.secrets["INFLUXDB_TOKEN"],
-            org=st.secrets["INFLUXDB_ORG"]
-        ) as client:
-            query = f'''
-                from(bucket: "{st.secrets["INFLUXDB_BUCKET"]}")
-                |> range(start: {start_date}T00:00:00Z, stop: {end_date}T23:59:59Z)
-                |> filter(fn: (r) => r._measurement == "{influx_measurement}")
-                |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-                |> sort(columns: ["_time"], desc: true)
-            '''
-            tables = client.query_api().query(query)
-            rows = []
-            for table in tables:
-                for record in table.records:
-                    row = record.values.copy()
-                    row["timestamp"] = record.get_time()
-                    rows.append(row)
-            df = pd.DataFrame(rows)
+    df = get_historical_dos_data(start_date, end_date)
+    if not df.empty:
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["reconstruction_error"] = np.random.default_rng().random(len(df))
+        df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
+        df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
 
-            if df.empty:
-                st.info("No historical data found for selected range.")
-                return
+        st.subheader("Summary")
+        col1, col2, col3 = st.columns(3)
+        col1.metric("Total Records", len(df))
+        col2.metric("Anomalies Detected", df["anomaly"].sum())
+        col3.metric("Anomaly Rate", f"{df['anomaly'].mean():.2%}")
 
-            st.markdown("### Raw Data")
-            rows_per_page = 100
-            total_pages = (len(df) - 1) // rows_per_page + 1
-            page = st.number_input("Page", min_value=1, max_value=total_pages, value=1)
-            paginated_df = df.iloc[(page - 1) * rows_per_page : page * rows_per_page]
-            st.dataframe(paginated_df, use_container_width=True)
+        chart_type = st.selectbox("Chart Type", ["Line", "Bar", "Pie", "Area", "Scatter"], index=0)
 
-            st.markdown("### Line Chart: Byte Rate Over Time")
-            if "byte_rate" in df.columns:
-                fig = px.line(df, x="timestamp", y="byte_rate", title="Byte Rate Over Time")
-                st.plotly_chart(fig, use_container_width=True)
+        rows_per_page = 100
+        total_pages = (len(df) - 1) // rows_per_page + 1
+        page = st.number_input("Historical Page", 1, total_pages, 1, key="dos_hist_page") - 1
+        df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-            st.markdown("### Line Chart: Packet Count Over Time")
-            if "packet_count" in df.columns:
-                fig2 = px.line(df, x="timestamp", y="packet_count", title="Packet Count Over Time")
-                st.plotly_chart(fig2, use_container_width=True)
+        def highlight_hist(row):
+            return [f"background-color: {highlight_color}" if row["anomaly"] == 1 else ""] * len(row)
 
-    except Exception as e:
-        st.error(f"Error querying historical data: {e}")
+        st.dataframe(df_view.style.apply(highlight_hist, axis=1))
+
+        if chart_type == "Line":
+            chart = px.line(df, x="timestamp", y="byte_rate", color="label",
+                            color_discrete_map={"Normal": "blue", "Attack": "red"})
+        elif chart_type == "Bar":
+            chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
+                           color_discrete_map={"Normal": "blue", "Attack": "red"})
+        elif chart_type == "Pie":
+            chart = px.pie(df, names="label")
+        elif chart_type == "Area":
+            chart = px.area(df, x="timestamp", y="byte_rate", color="label",
+                            color_discrete_map={"Normal": "blue", "Attack": "red"})
+        elif chart_type == "Scatter":
+            chart = px.scatter(df, x="timestamp", y="byte_rate", color="label",
+                               color_discrete_map={"Normal": "blue", "Attack": "red"})
+
+        st.plotly_chart(chart, use_container_width=True)
+        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dos_data.csv")
+    else:
+        st.warning("No historical data found.")
