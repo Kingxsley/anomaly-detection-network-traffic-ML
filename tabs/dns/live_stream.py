@@ -3,36 +3,33 @@ import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.dns.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
+from tabs.dns.utils import get_dns_data_from_influx, send_discord_alert, log_to_sqlitecloud, API_URL
 
 
 def render(thresh, highlight_color, alerts_enabled, db_path="dns"):
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live DNS Stream")
 
-    # Fallback to secrets API_URL if not provided
     api_url = API_URL
 
-    # Ensure session state is initialized
     if "predictions" not in st.session_state:
         st.session_state.predictions = []
     if "attacks" not in st.session_state:
         st.session_state.attacks = []
 
-    # Option to reset session state
     if st.button("Reset Stream"):
         st.session_state.predictions.clear()
         st.session_state.attacks.clear()
         st.success("Live stream session reset.")
 
-    records = get_dns_data()
+    records = get_dns_data_from_influx()
     new_predictions = []
 
     if records:
         for row in records:
             payload = {
-                "inter_arrival_time": row["inter_arrival_time"],
-                "dns_rate": row["dns_rate"]
+                "inter_arrival_time": row.get("inter_arrival_time", 0),
+                "dns_rate": row.get("dns_rate", 0)
             }
             try:
                 response = requests.post(api_url, json=payload, timeout=20)
@@ -67,4 +64,4 @@ def render(thresh, highlight_color, alerts_enabled, db_path="dns"):
 
         st.dataframe(paged_df.style.apply(highlight, axis=1), key="live_table")
     else:
-        st.info("No predictions yet.")
+        st.info("No real-time data available.")
