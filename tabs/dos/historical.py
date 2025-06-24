@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.dos.utils import get_dos_historical_data
+import numpy as np  # Ensure numpy is imported
 
 def render_historical(start_date, end_date, thresh, highlight_color):
     st.header("Historical DOS Data")
@@ -33,15 +34,30 @@ def render_historical(start_date, end_date, thresh, highlight_color):
 
         st.dataframe(df_view.style.apply(highlight_hist, axis=1))
 
-       if chart_type == "Line":
-    if "byte_rate" in df.columns:  # Ensure byte_rate exists
-        chart = px.line(df, x="timestamp", y="byte_rate", color="label",
-                         color_discrete_map={"Normal": "blue", "Attack": "red"})
+        if chart_type == "Line":
+            if "byte_rate" in df.columns:  # Ensure byte_rate exists
+                chart = px.line(df, x="timestamp", y="byte_rate", color="label",
+                                 color_discrete_map={"Normal": "blue", "Attack": "red"})
+                st.plotly_chart(chart)
+            else:
+                st.warning("byte_rate column is missing from the data.")
+        elif chart_type == "Bar":
+            if "byte_rate" in df.columns:
+                chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
+                               color_discrete_map={"Normal": "blue", "Attack": "red"})
+                st.plotly_chart(chart)
+            else:
+                st.warning("byte_rate column is missing from the data.")
+        elif chart_type == "Pie":
+            chart = px.pie(df, names="label")
+            st.plotly_chart(chart)
+        elif chart_type == "Area":
+            chart = px.area(df, x="timestamp", y="byte_rate", color="label",
+                            color_discrete_map={"Normal": "blue", "Attack": "red"})
+            st.plotly_chart(chart)
+        elif chart_type == "Scatter":
+            chart = px.scatter(df, x="timestamp", y="byte_rate", color="label",
+                               color_discrete_map={"Normal": "blue", "Attack": "red"})
+            st.plotly_chart(chart)
     else:
-        st.warning("byte_rate column is missing from the data.")
-elif chart_type == "Bar":
-    if "byte_rate" in df.columns:
-        chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
-                       color_discrete_map={"Normal": "blue", "Attack": "red"})
-    else:
-        st.warning("byte_rate column is missing from the data.")
+        st.warning("No historical data found.")
