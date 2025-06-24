@@ -1,12 +1,12 @@
+# tabs/dos/metrics.py
 import streamlit as st
 import pandas as pd
 import plotly.express as px
 import plotly.figure_factory as ff
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
 
-
-def render(thresh):
-    st.header("Model Performance")
+def render_metrics(measurement):
+    st.header("DOS Model Performance")
     df = pd.DataFrame(st.session_state.predictions)
 
     if not df.empty:
@@ -47,7 +47,6 @@ def render(thresh):
             color_discrete_map={0: "blue", 1: "red"},
             nbins=50
         )
-        fig_hist.add_vline(x=thresh, line_dash="dash", line_color="black", annotation_text="Threshold")
         st.plotly_chart(fig_hist, use_container_width=True)
     else:
         st.info("No predictions available for performance analysis.")
