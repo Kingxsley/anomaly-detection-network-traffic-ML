@@ -2,13 +2,13 @@
 
 import streamlit as st
 import pandas as pd
-from tabs.utils import get_data, DASHBOARD_TYPE  # Use DoS-specific functions from utils.py
+from tabs.utils import get_data  # Use DoS-specific functions from utils.py
 
-def render(time_range, time_range_query_map, dashboard_type):
-    st.title(f"{dashboard_type} Overview")  # Display DoS title
+def render(time_range, time_range_query_map):
+    st.title("DoS Overview")  # Static title for DoS
 
     query_duration = time_range_query_map.get(time_range, "-24h")
-    df = load_predictions_from_sqlitecloud(time_window=query_duration, dashboard_type=dashboard_type)
+    df = load_predictions_from_sqlitecloud(time_window=query_duration)
 
     if not df.empty:
         total_predictions = len(df)
