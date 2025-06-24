@@ -5,32 +5,24 @@ import requests
 from streamlit_autorefresh import st_autorefresh
 from tabs.dos.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, API_URL
 
-def render_live_stream(api_url, influx_measurement, db_path):
+
+def render(thresh, highlight_color, alerts_enabled, db_path="dos"):
     st_autorefresh(interval=10000, key="dos_live_refresh")
     st.header("Live DOS Stream")
 
-    # Fallback to secrets API_URL if not provided
-    api_url = api_url or API_URL
+    api_url = API_URL
 
-    # Validate parameters
-    if not influx_measurement:
-        st.warning("Missing InfluxDB measurement name.")
-    if not db_path:
-        st.warning("Missing database path for SQLite Cloud.")
-
-    # Ensure session state is initialized
     if "predictions" not in st.session_state:
         st.session_state.predictions = []
     if "attacks" not in st.session_state:
         st.session_state.attacks = []
 
-    # Option to reset session state
     if st.button("Reset Stream"):
         st.session_state.predictions.clear()
         st.session_state.attacks.clear()
         st.success("Live stream session reset.")
 
-    records = get_dos_data(influx_measurement)
+    records = get_dos_data("network_traffic")
     new_predictions = []
 
     if records:
@@ -46,7 +38,7 @@ def render_live_stream(api_url, influx_measurement, db_path):
                     result.update(row)
                     result["label"] = "Attack" if result["anomaly"] == 1 else "Normal"
                     new_predictions.append(result)
-                    if result["anomaly"] == 1:
+                    if result["anomaly"] == 1 and alerts_enabled:
                         send_discord_alert(result)
             except Exception as e:
                 st.warning(f"API error: {e}")
@@ -68,7 +60,7 @@ def render_live_stream(api_url, influx_measurement, db_path):
         paged_df = df.iloc[page_number * rows_per_page:(page_number + 1) * rows_per_page]
 
         def highlight(row):
-            return ["background-color: red" if row["anomaly"] == 1 else ""] * len(row)
+            return [f"background-color: {highlight_color}" if row["anomaly"] == 1 else ""] * len(row)
 
         st.dataframe(paged_df.style.apply(highlight, axis=1), key="dos_live_table")
     else:
