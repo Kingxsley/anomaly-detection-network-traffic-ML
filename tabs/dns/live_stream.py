@@ -1,14 +1,18 @@
-# tabs/dns/live_stream.py
 import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
 from tabs.dns.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
 
-
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live DNS Stream")
+
+    # Initialize session_state variables if they don't exist
+    if "predictions" not in st.session_state:
+        st.session_state.predictions = []
+    if "attacks" not in st.session_state:
+        st.session_state.attacks = []
 
     records = get_dns_data()
     new_predictions = []
