@@ -25,15 +25,15 @@ def render(time_range, time_range_query_map):
         col2.metric("Attack Rate", f"{attack_rate:.2%}")
         col3.metric("Recent Attacks", len(recent_attacks))
 
-        with st.expander("Attack Summary", expanded=True):
-            st.write(f"**Average Reconstruction Error:** {avg_error:.4f}")
-            st.write(f"**Maximum Error:** {max_error:.4f}")
-            st.write(f"**Minimum Error:** {min_error:.4f}")
+        st.markdown("### Attack Summary")
+        summary_cols = st.columns(3)
+        summary_cols[0].metric("Average Error", f"{avg_error:.4f}")
+        summary_cols[1].metric("Max Error", f"{max_error:.4f}")
+        summary_cols[2].metric("Min Error", f"{min_error:.4f}")
 
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
         ip_counts.columns = ["source_ip", "count"]
-
         fig_ip = px.bar(
             ip_counts,
             x="source_ip",
@@ -42,6 +42,18 @@ def render(time_range, time_range_query_map):
             text_auto=True
         )
         st.plotly_chart(fig_ip, use_container_width=True)
+
+        st.markdown("### Top Destination IPs")
+        dest_counts = df["dest_ip"].value_counts().nlargest(10).reset_index()
+        dest_counts.columns = ["dest_ip", "count"]
+        fig_dest = px.bar(
+            dest_counts,
+            x="dest_ip",
+            y="count",
+            labels={"dest_ip": "Destination IP", "count": "Anomaly Count"},
+            text_auto=True
+        )
+        st.plotly_chart(fig_dest, use_container_width=True)
 
         st.markdown("### Anomaly Score Over Time")
         fig = px.line(
@@ -53,5 +65,8 @@ def render(time_range, time_range_query_map):
             title="Anomaly Score Over Time"
         )
         st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("### Recent Attack Details")
+        st.dataframe(recent_attacks.head(10)[["timestamp", "source_ip", "dest_ip", "anomaly_score"]])
     else:
         st.info("No predictions available in the selected time range.")
