@@ -5,7 +5,7 @@ import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import load_predictions_from_sqlitecloud
+from tabs.utils import load_predictions_from_sqlitecloud, log_to_sqlitecloud
 
 def render(time_range, time_range_query_map):
     st_autorefresh(interval=30000, key="overview_refresh")
