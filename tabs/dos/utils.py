@@ -112,3 +112,29 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
     except Exception as e:
         print(f"[SQLite Load Error]: {e}")
         return pd.DataFrame()
+def get_dos_historical_data(start_date, end_date):
+    try:
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}")
+            |> range(start: {start_date.isoformat()}, stop: {end_date.isoformat()})
+            |> filter(fn: (r) => r._measurement == "network_traffic")
+            |> filter(fn: (r) => r._field == "packet_count" or r._field == "byte_rate")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    rows.append({
+                        "timestamp": record.get_time(),
+                        "packet_count": record.values.get("packet_count", 0.0),
+                        "byte_rate": record.values.get("byte_rate", 0.0),
+                        "source_ip": record.values.get("source_ip", "unknown"),
+                        "dest_ip": record.values.get("dest_ip", "unknown")
+                    })
+            return pd.DataFrame(rows)
+    except Exception as e:
+        st.warning(f"Failed to fetch historical DOS data: {e}")
+        return pd.DataFrame()
