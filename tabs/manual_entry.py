@@ -10,7 +10,7 @@ def render():
     with col1:
         inter_arrival_time = st.number_input("Inter Arrival Time", value=0.01)  # DoS-specific field
     with col2:
-        dos_rate = st.number_input("DoS Rate", value=5.0)  # Correct DoS rate field
+        dos_rate = st.number_input("DoS Rate", value=5.0)  # DoS rate field
 
     # Use the correct DoS API URL
     API_URL = DOS_API_URL
