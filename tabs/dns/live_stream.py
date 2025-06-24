@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
+from tabs.dns.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
 
 
 def render(thresh, highlight_color, alerts_enabled):
