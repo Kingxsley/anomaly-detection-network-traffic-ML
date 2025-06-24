@@ -10,7 +10,7 @@ from influxdb_client import InfluxDBClient
 import requests
 import sqlitecloud
 import warnings
-
+DASHBOARD_TYPE = st.secrets.get("DASHBOARD_TYPE", "DNS") 
 # --- Secrets ---
 API_URL = st.secrets.get(f"{'DOS' if st.secrets.get('DASHBOARD_TYPE') == 'DOS' else 'API'}_URL", "")
 DISCORD_WEBHOOK = st.secrets.get(f"{'DOS' if st.secrets.get('DASHBOARD_TYPE') == 'DOS' else 'DISCORD'}_WEBHOOK", "")
