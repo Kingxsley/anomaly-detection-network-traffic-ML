@@ -33,22 +33,15 @@ def render_historical(start_date, end_date, thresh, highlight_color):
 
         st.dataframe(df_view.style.apply(highlight_hist, axis=1))
 
-        if chart_type == "Line":
-            chart = px.line(df, x="timestamp", y="byte_rate", color="label",
-                            color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Bar":
-            chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
-                           color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Pie":
-            chart = px.pie(df, names="label")
-        elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="byte_rate", color="label",
-                            color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="byte_rate", color="label",
-                               color_discrete_map={"Normal": "blue", "Attack": "red"})
-
-        st.plotly_chart(chart, use_container_width=True)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dos_data.csv")
+       if chart_type == "Line":
+    if "byte_rate" in df.columns:  # Ensure byte_rate exists
+        chart = px.line(df, x="timestamp", y="byte_rate", color="label",
+                         color_discrete_map={"Normal": "blue", "Attack": "red"})
     else:
-        st.warning("No historical data found.")
+        st.warning("byte_rate column is missing from the data.")
+elif chart_type == "Bar":
+    if "byte_rate" in df.columns:
+        chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
+                       color_discrete_map={"Normal": "blue", "Attack": "red"})
+    else:
+        st.warning("byte_rate column is missing from the data.")
