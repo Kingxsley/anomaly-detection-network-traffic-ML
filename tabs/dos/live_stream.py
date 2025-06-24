@@ -4,7 +4,7 @@ import requests
 from streamlit_autorefresh import st_autorefresh
 from tabs.dos.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, DOS_API_URL
 
-def render(thresh, highlight_color, alerts_enabled):
+def render_live_stream(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="dos_live_refresh")
     st.header("Live DOS Stream")
 
