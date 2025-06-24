@@ -166,3 +166,32 @@ def get_historical(start, end):
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
+
+# --- Summary Dashboard Helpers ---
+def generate_attack_summary(df):
+    if df.empty:
+        return None, None
+
+    top_ips = df["source_ip"].value_counts().nlargest(5).reset_index()
+    top_ips.columns = ["source_ip", "count"]
+
+    avg_error = df["anomaly_score"].mean()
+    summary = {
+        "total_records": len(df),
+        "avg_error": round(avg_error, 4),
+        "top_ips": top_ips
+    }
+    return summary, top_ips
+
+def display_summary_cards(summary):
+    if not summary:
+        st.info("No recent data to summarize.")
+        return
+
+    col1, col2, col3 = st.columns(3)
+    col1.metric("Total Records", summary["total_records"])
+    col2.metric("Avg Reconstruction Error", summary["avg_error"])
+    with col3:
+        st.markdown("**Top Source IPs**")
+        for _, row in summary["top_ips"].iterrows():
+            st.write(f"{row['source_ip']}: {row['count']}")
