@@ -37,13 +37,12 @@ def send_discord_alert(result):
         st.warning(f"Discord alert failed: {e}")
 
 # --- SQLiteCloud Loader ---
+# --- SQLiteCloud Loader ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
-        import sqlite3
-        from urllib.parse import urlparse
+        import sqlitecloud
 
-        parsed_url = urlparse(SQLITECLOUD_URL)
-        db_path = f"/mnt/data/{parsed_url.path.lstrip('/')}"
+        client = sqlitecloud.Client(SQLITECLOUD_URL)
 
         if "h" in time_window:
             delta = timedelta(hours=int(time_window.strip("-h")))
@@ -56,19 +55,18 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
         query = f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
             ORDER BY timestamp DESC
         """
-        cursor.execute(query)
-        rows = cursor.fetchall()
+        result = client.execute(query)
+        rows = result.fetchall()
         if not rows:
             return pd.DataFrame()
-        cols = [column[0] for column in cursor.description]
-        df = pd.DataFrame(rows, columns=cols)
+
+        cols = result.description
+        df = pd.DataFrame(rows, columns=[c[0] for c in cols])
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         return df.dropna(subset=["timestamp"])
     except Exception as e:
@@ -76,17 +74,14 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger ---
+# --- SQLiteCloud Logger ---
 def log_to_sqlitecloud(record):
     try:
-        import sqlite3
-        from urllib.parse import urlparse
+        import sqlitecloud
 
-        parsed_url = urlparse(SQLITECLOUD_URL)
-        db_path = f"/mnt/data/{parsed_url.path.lstrip('/')}"
+        client = sqlitecloud.Client(SQLITECLOUD_URL)
 
-        conn = sqlite3.connect(db_path)
-        cursor = conn.cursor()
-        cursor.execute("""
+        create_query = """
             CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
@@ -96,22 +91,24 @@ def log_to_sqlitecloud(record):
                 anomaly_score REAL,
                 is_anomaly INTEGER
             );
-        """)
-        cursor.execute("""
+        """
+        insert_query = """
             INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (
+        """
+        values = (
             record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
             "DNS",
             float(record.get("reconstruction_error", 0)),
             int(record.get("anomaly", 0))
-        ))
-        conn.commit()
-        conn.close()
+        )
+        client.execute(create_query)
+        client.execute(insert_query, values)
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
+
 
 # --- Get Real-time DNS Data ---
 def get_dns_data():
