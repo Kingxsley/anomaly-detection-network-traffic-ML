@@ -3,9 +3,8 @@
 import streamlit as st
 import requests
 from datetime import datetime
-from tabs.utils import DASHBOARD_TYPE  # Import DASHBOARD_TYPE here
 
-def render():
+def render(dashboard_type):
     st.header("Manual Entry")
     col1, col2 = st.columns(2)
     with col1:
@@ -13,8 +12,8 @@ def render():
     with col2:
         dns_rate = st.number_input("DNS Rate", value=5.0)
 
-    # Use the appropriate API URL based on DASHBOARD_TYPE
-    API_URL = st.secrets.get(f"{'DOS' if DASHBOARD_TYPE == 'DOS' else 'API'}_URL")
+    # Use the appropriate API URL based on dashboard_type
+    API_URL = st.secrets.get(f"{'DOS' if dashboard_type == 'DOS' else 'API'}_URL")
 
     if st.button("Predict"):
         try:
