@@ -1,10 +1,10 @@
+# tabs/dns/historical.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.dns.utils import get_historical
-
+from tabs.dns.utils import get_historical_from_influx
 
 def render(thresh, highlight_color):
     st.header("Historical DNS Data")
@@ -15,7 +15,7 @@ def render(thresh, highlight_color):
     with col2:
         end_date = st.date_input("End Date", datetime.now())
 
-    df = get_historical(start_date, end_date)
+    df = get_historical_from_influx(start_date, end_date)
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df["reconstruction_error"] = np.random.default_rng().random(len(df))
