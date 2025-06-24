@@ -118,3 +118,38 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
     except Exception as e:
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
+
+# Function to Get Historical Data based on start_date and end_date
+def get_historical(start_date, end_date):
+    try:
+        # Establish connection to SQLite Cloud
+        dashboard_type = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Default to DNS if not set
+        if dashboard_type == "DNS":
+            database_url = f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/anomaly?apikey={st.secrets['SQLITE_APIKEY']}"
+        else:
+            database_url = f"sqlitecloud://{st.secrets['DOS_SQLITE_HOST']}:{st.secrets['DOS_SQLITE_PORT']}/dos?apikey={st.secrets['DOS_SQLITE_APIKEY']}"
+
+        conn = sqlitecloud.connect(database_url)
+
+        # SQL query to fetch data within the given time range
+        query = f"""
+            SELECT * FROM anomalies
+            WHERE timestamp >= '{start_date}' AND timestamp <= '{end_date}'
+            ORDER BY timestamp DESC
+        """
+        cursor = conn.execute(query)
+        rows = cursor.fetchall()
+        if not rows:
+            return pd.DataFrame()
+
+        cols = [column[0] for column in cursor.description]
+        df = pd.DataFrame(rows, columns=cols)
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+        
+        conn.close()
+        return df.dropna(subset=["timestamp"])
+
+    except Exception as e:
+        st.error(f"Error retrieving historical data: {e}")
+        return pd.DataFrame()
+
