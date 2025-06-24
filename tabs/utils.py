@@ -84,7 +84,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.now() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(SQLITECLOUD_URL, sslmode="require", server_hostname="cfolwawehk.g2.sqlite.cloud")
+        conn = sqlitecloud.connect(SQLITECLOUD_URL)
         cursor = conn.cursor()
         query = f"""
             SELECT * FROM anomalies
