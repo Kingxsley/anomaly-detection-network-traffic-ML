@@ -32,17 +32,12 @@ def render(time_range, time_range_query_map):
         summary_cols[1].metric("Max Reconstruction Error", f"{max_error:.4f}")
         summary_cols[2].metric("Min Reconstruction Error", f"{min_error:.4f}")
 
-        st.markdown("### Time of Most Attacks")
+        st.markdown("### Times with Most Attacks")
         attack_df = df[df["is_anomaly"] == 1].copy()
-        attack_df["hour"] = pd.to_datetime(attack_df["timestamp"]).dt.hour
-        peak_hour_series = attack_df["hour"].value_counts().sort_values(ascending=False)
-
-        if not peak_hour_series.empty:
-            peak_hour = peak_hour_series.index[0]
-            peak_count = peak_hour_series.iloc[0]
-            st.markdown(f"**Most Attacks Occurred Around:** {peak_hour}:00 with {peak_count} attacks")
-        else:
-            st.markdown("No attacks found in the selected time range.")
+        attack_df["time"] = pd.to_datetime(attack_df["timestamp"]).dt.strftime('%Y-%m-%d %H:00')
+        top_times = attack_df["time"].value_counts().nlargest(5).reset_index()
+        top_times.columns = ["Time (Hour Block)", "Attack Count"]
+        st.dataframe(top_times.style.format(), use_container_width=True)
 
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
