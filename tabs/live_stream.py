@@ -2,8 +2,9 @@
 
 import streamlit as st
 import requests
+import pandas as pd  # <-- Ensure pandas is imported
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_data  # Assuming get_data is defined in utils.py
+from tabs.utils import get_data, DASHBOARD_TYPE  # Import get_data here
 
 def render(thresh, highlight_color, alerts_enabled, dashboard_type):
     st_autorefresh(interval=10000, key="live_refresh")
@@ -38,7 +39,7 @@ def render(thresh, highlight_color, alerts_enabled, dashboard_type):
             for r in new_predictions:
                 log_to_sqlitecloud(r)
 
-    df = pd.DataFrame(st.session_state.predictions)
+    df = pd.DataFrame(st.session_state.predictions)  # Create DataFrame using pd
     if not df.empty:
         st.dataframe(df)
     else:
