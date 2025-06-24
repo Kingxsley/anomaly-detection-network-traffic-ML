@@ -1,13 +1,13 @@
 # --- main app.py --- 
 import streamlit as st
-import pandas as pd  # ✅ Added missing import
+import pandas as pd
 from tabs import overview
 from tabs import live_stream
 from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
 
-st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")  # Update title for DoS
+st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")
 
 # --- Sidebar Settings --- 
 time_range_query_map = {
@@ -24,27 +24,25 @@ highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yel
 alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
 # --- State Initialization --- 
-if "predictions" not in st.session_state: 
-    st.session_state.predictions = [] 
-if "attacks" not in st.session_state: 
+if "predictions" not in st.session_state:
+    st.session_state.predictions = []
+if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
 # --- Tabs Navigation --- 
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
-# Pass the correct `DASHBOARD_TYPE` (DoS) to each tab
+with tabs[0]:
+    overview.render(time_range, time_range_query_map)  # Overview for DoS
 
-with tabs[0]: 
-    overview.render(time_range, time_range_query_map, "DOS")  # Pass 'DOS' to overview
+with tabs[1]:
+    live_stream.render(thresh, highlight_color, alerts_enabled)  # Live Stream for DoS
 
-with tabs[1]: 
-    live_stream.render(thresh, highlight_color, alerts_enabled, "DOS")  # Pass 'DOS' to live stream
+with tabs[2]:
+    manual_entry.render()  # Manual Entry for DoS
 
-with tabs[2]: 
-    manual_entry.render("DOS")  # Pass 'DOS' to manual entry
+with tabs[3]:
+    metrics.render(thresh)  # Metrics for DoS
 
-with tabs[3]: 
-    metrics.render(thresh, "DOS")  # Pass 'DOS' to metrics
-
-with tabs[4]: 
-    historical.render(thresh, highlight_color, "DOS")  # Pass 'DOS' to historical data
+with tabs[4]:
+    historical.render(thresh, highlight_color)  # Historical Data for DoS
