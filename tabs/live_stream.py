@@ -3,7 +3,7 @@
 import streamlit as st
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import DASHBOARD_TYPE  # Removed DETAILED_URL import
+from tabs.utils import get_data, DASHBOARD_TYPE  # Import get_data here
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
@@ -11,7 +11,7 @@ def render(thresh, highlight_color, alerts_enabled):
 
     # Use the appropriate API URL based on DASHBOARD_TYPE
     API_URL = st.secrets.get(f"{'DOS' if DASHBOARD_TYPE == 'DOS' else 'API'}_URL")
-    records = get_data(API_URL)
+    records = get_data(API_URL)  # Now using the imported get_data function
 
     new_predictions = []
     if records:
