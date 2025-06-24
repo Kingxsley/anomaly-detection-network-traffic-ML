@@ -1,0 +1,9 @@
+venv/
+__pycache__/
+*.pyc
+.DS_Store
+autoencoder_dns.keras
+scaler_dns.pkl
+threshold.pkl
+dns_anomaly.log
+.streamlit/secrets.toml
