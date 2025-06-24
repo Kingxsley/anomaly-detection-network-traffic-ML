@@ -1,4 +1,4 @@
-import streamlit as st  # Make sure this is at the top of the file
+import streamlit as st
 from tabs.dns.overview import render_overview as render_dns_overview
 from tabs.dns.live_stream import render as render_dns_live_stream
 from tabs.dns.manual_entry import render as render_dns_manual_entry
@@ -11,8 +11,9 @@ from tabs.dos.manual_entry import render_manual_entry as render_dos_manual_entry
 from tabs.dos.metrics import render_metrics as render_dos_metrics
 from tabs.dos.historical import render_historical as render_dos_historical
 
+
 def render_dashboard(title, api_url, influx_measurement, db_path, mode):
-    # st.set_page_config is already removed from here
+    st.set_page_config(page_title=title, layout="wide")
     st.title(title)
 
     # Shared sidebar filters
@@ -41,7 +42,7 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
 
     if mode == "dns":
         with tab1:
-            render_dns_overview(api_url, influx_measurement, query_duration)  # pass query_duration
+            render_dns_overview(api_url, influx_measurement, time_range, time_range_query_map)
         with tab2:
             render_dns_live_stream(thresh, highlight_color, alerts_enabled)
         with tab3:
@@ -53,7 +54,7 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
 
     elif mode == "dos":
         with tab1:
-            render_dos_overview(api_url, influx_measurement)
+            render_dos_overview(api_url, influx_measurement, time_range, time_range_query_map)
         with tab2:
             render_dos_live_stream(api_url, influx_measurement, db_path)
         with tab3:
