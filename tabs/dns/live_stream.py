@@ -3,36 +3,24 @@ import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.dns.utils import get_dns_data_from_influx, send_discord_alert, log_to_sqlitecloud, API_URL
+from tabs.dns.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
 
 
-def render(thresh, highlight_color, alerts_enabled, db_path="dns"):
+def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live DNS Stream")
 
-    api_url = API_URL
-
-    if "predictions" not in st.session_state:
-        st.session_state.predictions = []
-    if "attacks" not in st.session_state:
-        st.session_state.attacks = []
-
-    if st.button("Reset Stream"):
-        st.session_state.predictions.clear()
-        st.session_state.attacks.clear()
-        st.success("Live stream session reset.")
-
-    records = get_dns_data_from_influx()
+    records = get_dns_data()
     new_predictions = []
 
     if records:
         for row in records:
             payload = {
-                "inter_arrival_time": row.get("inter_arrival_time", 0),
-                "dns_rate": row.get("dns_rate", 0)
+                "inter_arrival_time": row["inter_arrival_time"],
+                "dns_rate": row["dns_rate"]
             }
             try:
-                response = requests.post(api_url, json=payload, timeout=20)
+                response = requests.post(API_URL, json=payload, timeout=20)
                 result = response.json()
                 if "anomaly" in result and "reconstruction_error" in result:
                     result.update(row)
@@ -47,7 +35,7 @@ def render(thresh, highlight_color, alerts_enabled, db_path="dns"):
             st.session_state.predictions.extend(new_predictions)
             st.session_state.attacks.extend([r for r in new_predictions if r["anomaly"] == 1])
             for r in new_predictions:
-                log_to_sqlitecloud(r, db_path=db_path)
+                log_to_sqlitecloud(r)
             st.session_state.predictions = st.session_state.predictions[-1000:]
             st.session_state.attacks = st.session_state.attacks[-1000:]
 
@@ -64,4 +52,4 @@ def render(thresh, highlight_color, alerts_enabled, db_path="dns"):
 
         st.dataframe(paged_df.style.apply(highlight, axis=1), key="live_table")
     else:
-        st.info("No real-time data available.")
+        st.info("No predictions yet.")
