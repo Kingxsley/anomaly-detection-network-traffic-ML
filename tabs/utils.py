@@ -1,24 +1,26 @@
 # utils.py
 
-from influxdb_client import InfluxDBClient
 import streamlit as st
+from influxdb_client import InfluxDBClient
 
-# --- DOS Settings ---
-DOS_API_URL = "https://kingxsley-dos-api.hf.space/predict"
-DOS_INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-DOS_INFLUXDB_ORG = "Anormally Detection"
-DOS_INFLUXDB_BUCKET = "realtime"
-DOS_INFLUXDB_TOKEN = "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg=="
-DOS_SQLITE_HOST = "cfolwawehk.g2.sqlite.cloud"
-DOS_SQLITE_PORT = 8860
-DOS_SQLITE_DB = "dos"
-DOS_SQLITE_APIKEY = "77cz3yvotfOw3EgNIM9xPLAWaajazSyxcnCWvvbxFEA"
+# Fetch DoS settings from Streamlit Cloud secrets
+DOS_API_URL = st.secrets["DOS"]["API_URL"]
+DOS_DISCORD_WEBHOOK = st.secrets["DOS"]["DISCORD_WEBHOOK"]
+DOS_INFLUXDB_URL = st.secrets["DOS"]["INFLUXDB_URL"]
+DOS_INFLUXDB_ORG = st.secrets["DOS"]["INFLUXDB_ORG"]
+DOS_INFLUXDB_BUCKET = st.secrets["DOS"]["INFLUXDB_BUCKET"]
+DOS_INFLUXDB_TOKEN = st.secrets["DOS"]["INFLUXDB_TOKEN"]
+DOS_SQLITE_HOST = st.secrets["DOS"]["SQLITE_HOST"]
+DOS_SQLITE_PORT = int(st.secrets["DOS"]["SQLITE_PORT"])  # Make sure it's cast to int
+DOS_SQLITE_DB = st.secrets["DOS"]["SQLITE_DB"]
+DOS_SQLITE_APIKEY = st.secrets["DOS"]["SQLITE_APIKEY"]
 
-
-def get_data(api_url):
+def get_data():
     try:
+        # Fetch DoS data from InfluxDB using the DoS configuration from Streamlit secrets
         if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
+        
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
