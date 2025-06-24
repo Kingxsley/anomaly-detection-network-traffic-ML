@@ -2,10 +2,10 @@
 
 import streamlit as st
 import pandas as pd
-from tabs.utils import get_historical  # Import get_historical for DoS data
+from tabs.utils import get_historical  # Import the correct get_historical for DoS
 
 def render(thresh, highlight_color):
-    st.header("DoS Historical Data")  # Update to DoS
+    st.header("DoS Historical Data")  # Update header for DoS
 
     time_range = st.sidebar.selectbox("Select Time Range", ["Last 30 min", "Last 1 hour", "Last 24 hours", "Last 7 days"])
     time_range_query_map = {
