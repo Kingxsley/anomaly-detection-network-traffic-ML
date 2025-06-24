@@ -4,7 +4,8 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.dns.utils import get_historical_from_influx
+from tabs.dns.utils import get_historical
+
 
 def render(thresh, highlight_color):
     st.header("Historical DNS Data")
