@@ -42,9 +42,8 @@ def log_to_sqlitecloud(record):
         conn = sqlitecloud.connect(
             SQLITECLOUD_URL,
             sslmode="require",
-            server_hostname="cfolwawehk.g2.sqlite.cloud"  # extracted from your URL
+            server_hostname="cfolwawehk.g2.sqlite.cloud"
         )
-
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
@@ -61,11 +60,11 @@ def log_to_sqlitecloud(record):
             INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            record.get("timestamp"),
+            record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
-            "DNS",
-            float(record.get("reconstruction_error", 0)),
+            record.get("protocol", "DNS"),
+            float(record.get("reconstruction_error", 0.0)),
             int(record.get("anomaly", 0))
         ))
         conn.commit()
@@ -73,11 +72,13 @@ def log_to_sqlitecloud(record):
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
+
 # --- Utility: Load Predictions ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
         import sqlitecloud
 
+        # Handle time window string
         if "h" in time_window:
             delta = timedelta(hours=int(time_window.strip("-h")))
         elif "d" in time_window:
@@ -87,26 +88,31 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         else:
             delta = timedelta(hours=24)
 
-        cutoff = (datetime.now() - delta).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn = sqlitecloud.connect(
+            SQLITECLOUD_URL,
+            sslmode="require",
+            server_hostname="cfolwawehk.g2.sqlite.cloud"
+        )
         cursor = conn.cursor()
-        query = f"""
+        cursor.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
             ORDER BY timestamp DESC
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         if not rows:
             return pd.DataFrame()
-        cols = [column[0] for column in cursor.description]
-        df = pd.DataFrame(rows, columns=cols)
+
+        columns = [col[0] for col in cursor.description]
+        df = pd.DataFrame(rows, columns=columns)
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         return df.dropna(subset=["timestamp"])
     except Exception as e:
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
+
 
 # --- Utility: Get Real-time DNS Data ---
 def get_dns_data():
