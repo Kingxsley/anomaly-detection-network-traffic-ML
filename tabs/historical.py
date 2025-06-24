@@ -41,6 +41,9 @@ def render(thresh, highlight_color):
 
         st.dataframe(df_view.style.apply(highlight_hist, axis=1))
 
+        # Initialize chart variable
+        chart = None
+
         # Plotting the selected chart type based on available columns
         if st.secrets.get('DASHBOARD_TYPE', 'DNS') == 'DNS':
             # DNS: Use dns_rate and inter_arrival_time
@@ -82,7 +85,11 @@ def render(thresh, highlight_color):
             else:
                 st.warning("Required columns for DOS are missing.")
 
-        st.plotly_chart(chart, use_container_width=True)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_data.csv")
+        # Check if chart is not None before plotting
+        if chart:
+            st.plotly_chart(chart, use_container_width=True)
+            st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_data.csv")
+        else:
+            st.warning("No valid chart to display.")
     else:
         st.warning("No historical data found.")
