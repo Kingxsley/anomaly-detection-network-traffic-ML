@@ -45,4 +45,4 @@ with tabs[3]:
     metrics.render(thresh)
 
 with tabs[4]:
-    historical.render(thresh, highlight_color)
+    historical.render(time_range, time_range_query_map, thresh, highlight_color)  # Pass time_range here
