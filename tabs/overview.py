@@ -1,6 +1,7 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
@@ -44,16 +45,31 @@ def render(time_range, time_range_query_map):
             attack_df = df[df["is_anomaly"] == 1].copy()
             avg_score = attack_df["anomaly_score"].mean()
             max_score = attack_df["anomaly_score"].max()
-            top_sources = attack_df["source_ip"].value_counts().head(3)
+            top_sources = attack_df["source_ip"].value_counts().head(3).reset_index()
+            top_sources.columns = ["Source IP", "Anomaly Count"]
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
-            with st.expander("📌 Attack Summary Details", expanded=True):
-                st.markdown(f"**Average Reconstruction Error:** `{avg_score:.4f}`")
-                st.markdown(f"**Maximum Reconstruction Error:** `{max_score:.4f}`")
-                st.markdown("**Top Source IPs with Most Anomalies:**")
-                for ip, count in top_sources.items():
-                    st.markdown(f"- **{ip}**: {count} anomalies")
-                st.markdown(f"**Peak Hour of Attack Activity:** {peak_hour}:00")
+            col1, col2 = st.columns(2)
+            with col1:
+                st.metric("Avg. Reconstruction Error", f"{avg_score:.4f}")
+                st.metric("Max. Reconstruction Error", f"{max_score:.4f}")
+                st.metric("Peak Hour of Attacks", f"{peak_hour}:00")
+
+            with col2:
+                fig = go.Figure(data=[
+                    go.Bar(
+                        x=top_sources["Source IP"],
+                        y=top_sources["Anomaly Count"],
+                        marker_color="crimson"
+                    )
+                ])
+                fig.update_layout(
+                    title="Top Source IPs by Anomaly Count",
+                    xaxis_title="Source IP",
+                    yaxis_title="Count",
+                    height=300
+                )
+                st.plotly_chart(fig, use_container_width=True)
         else:
             st.info("No attacks recorded in the selected time window.")
 
