@@ -9,6 +9,7 @@ from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
 import requests
 import sqlitecloud
+import warnings
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
@@ -66,6 +67,11 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         cols = [column[0] for column in cursor.description]
         df = pd.DataFrame(rows, columns=cols)
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AttributeError)
+            conn.close()
+
         return df.dropna(subset=["timestamp"])
     except Exception as e:
         st.error(f"SQLite Cloud error: {e}")
@@ -98,7 +104,9 @@ def log_to_sqlitecloud(record):
             int(record.get("anomaly", 0))
         ))
         conn.commit()
-        conn.close()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AttributeError)
+            conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
