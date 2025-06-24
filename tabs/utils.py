@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime, timedelta
 import streamlit as st
 
-# Function to get DNS data (replace with your actual DNS data retrieval logic)
+# Function to get DNS data (replace this with your actual DNS data retrieval logic)
 def get_dns_data():
     # Placeholder function to simulate DNS data fetching
     return [
@@ -11,7 +11,7 @@ def get_dns_data():
         # Add more rows as needed
     ]
 
-# Function to send Discord alert (replace with your actual implementation)
+# Function to send Discord alert (replace this with your actual implementation)
 def send_discord_alert(result):
     discord_webhook = st.secrets.get("DISCORD_WEBHOOK", "")
     message = {
