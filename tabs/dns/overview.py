@@ -5,9 +5,20 @@ import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
 from tabs.dns.utils import load_predictions_from_sqlitecloud
 
-def render_overview(api_url, influx_measurement, query_duration):
+def render_overview(api_url, influx_measurement, time_range):
     st_autorefresh(interval=30000, key="overview_refresh")
     st.title("DNS Anomaly Detection Overview")
+
+    time_range_query_map = {
+        "Last 30 min": "-30m",
+        "Last 1 hour": "-1h",
+        "Last 24 hours": "-24h",
+        "Last 7 days": "-7d",
+        "Last 14 days": "-14d",
+        "Last 30 days": "-30d"
+    }
+
+    query_duration = time_range_query_map.get(time_range, "-24h")
     df = load_predictions_from_sqlitecloud(time_window=query_duration)
 
     if not df.empty:
