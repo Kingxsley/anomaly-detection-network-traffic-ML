@@ -11,7 +11,7 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- Secrets ---
+# --- DNS Secrets ---
 API_URL = st.secrets.get("API_URL", "")
 DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "")
 INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
@@ -78,16 +78,11 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger ---
-def log_to_sqlitecloud(record, db_path="dns"):
+def log_to_sqlitecloud(record):
     try:
-        conn = sqlitecloud.connect(
-            f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{db_path}?apikey={SQLITE_APIKEY}",
-            uri=True,
-            check_hostname=False,  # add this only if using IP (not recommended)
-            server_hostname=SQLITE_HOST  # REQUIRED for SSL with hostname
-        )
+        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS dns_anomalies (
+            CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
                 source_ip TEXT,
@@ -98,10 +93,10 @@ def log_to_sqlitecloud(record, db_path="dns"):
             );
         """)
         conn.execute("""
-            INSERT INTO dns_anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
+            INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            record.get("timestamp"),
+            record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
             "DNS",
@@ -109,10 +104,11 @@ def log_to_sqlitecloud(record, db_path="dns"):
             int(record.get("anomaly", 0))
         ))
         conn.commit()
-        conn.close()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AttributeError)
+            conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
-
 
 # --- Get Real-time DNS Data ---
 def get_dns_data():
@@ -200,4 +196,3 @@ def display_summary_cards(summary):
         for _, row in summary["top_ips"].iterrows():
             st.write(f"{row['source_ip']}: {row['count']}")
 
-get_historical_from_influx = get_historical
