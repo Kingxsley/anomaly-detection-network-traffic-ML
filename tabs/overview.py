@@ -18,13 +18,10 @@ def render(time_range, time_range_query_map):
         max_error = df["anomaly_score"].max()
         min_error = df["anomaly_score"].min()
 
-        recent_cutoff = pd.Timestamp.now().replace(tzinfo=None) - pd.Timedelta(hours=1)
-        recent_attacks = df[(df["timestamp"] >= recent_cutoff) & (df["is_anomaly"] == 1)]
-
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Predictions", total_predictions)
         col2.metric("Attack Rate", f"{attack_rate:.2%}")
-        col3.metric("Recent Attacks", len(recent_attacks))
+        col3.metric("Total Attacks", df[df["is_anomaly"] == 1].shape[0])
 
         st.markdown("### Attack Summary")
         summary_cols = st.columns(3)
@@ -40,7 +37,7 @@ def render(time_range, time_range_query_map):
         st.dataframe(top_times.style.format(), use_container_width=True)
 
         st.markdown("### Top Source IPs")
-        ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
+        ip_counts = df[df["is_anomaly"] == 1]["source_ip"].value_counts().nlargest(10).reset_index()
         ip_counts.columns = ["source_ip", "count"]
         fig_ip = px.bar(
             ip_counts,
@@ -52,7 +49,7 @@ def render(time_range, time_range_query_map):
         st.plotly_chart(fig_ip, use_container_width=True)
 
         st.markdown("### Top Destination IPs")
-        dest_counts = df["dest_ip"].value_counts().nlargest(10).reset_index()
+        dest_counts = df[df["is_anomaly"] == 1]["dest_ip"].value_counts().nlargest(10).reset_index()
         dest_counts.columns = ["dest_ip", "count"]
         fig_dest = px.bar(
             dest_counts,
@@ -75,6 +72,7 @@ def render(time_range, time_range_query_map):
         st.plotly_chart(fig, use_container_width=True)
 
         st.markdown("### Recent Attack Details")
-        st.dataframe(recent_attacks.head(10)[["timestamp", "source_ip", "dest_ip", "anomaly_score"]])
+        recent_attacks = df[df["is_anomaly"] == 1].sort_values("timestamp", ascending=False).head(10)
+        st.dataframe(recent_attacks[["timestamp", "source_ip", "dest_ip", "anomaly_score"]], use_container_width=True)
     else:
         st.info("No predictions available in the selected time range.")
