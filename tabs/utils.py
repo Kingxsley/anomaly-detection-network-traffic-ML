@@ -1,13 +1,9 @@
-import sqlite3
+import sqlitecloud
 import pandas as pd
 from datetime import datetime, timedelta
-import requests
 import streamlit as st
 
-# --- API URL ---
-API_URL = st.secrets.get("API_URL", "")
-
-# Function to get DNS data (replace this with your actual DNS data retrieval logic)
+# Function to get DNS data (replace with your actual DNS data retrieval logic)
 def get_dns_data():
     # Placeholder function to simulate DNS data fetching
     return [
@@ -15,7 +11,7 @@ def get_dns_data():
         # Add more rows as needed
     ]
 
-# Function to send Discord alert (replace this with your actual implementation)
+# Function to send Discord alert (replace with your actual implementation)
 def send_discord_alert(result):
     discord_webhook = st.secrets.get("DISCORD_WEBHOOK", "")
     message = {
@@ -37,7 +33,19 @@ def send_discord_alert(result):
 # Function to log predictions to SQLite Cloud
 def log_to_sqlitecloud(record):
     try:
-        conn = sqlite3.connect(f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/{st.secrets['SQLITE_DB']}?apikey={st.secrets['SQLITE_APIKEY']}")
+        # Get the active dashboard type (DNS or DOS)
+        dashboard_type = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Default to DNS if not set
+
+        # Set the correct database based on the selected dashboard type
+        if dashboard_type == "DNS":
+            database_url = f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/anomaly?apikey={st.secrets['SQLITE_APIKEY']}"
+        else:
+            database_url = f"sqlitecloud://{st.secrets['DOS_SQLITE_HOST']}:{st.secrets['DOS_SQLITE_PORT']}/dos?apikey={st.secrets['DOS_SQLITE_APIKEY']}"
+
+        # Open the connection to SQLite Cloud
+        conn = sqlitecloud.connect(database_url)
+
+        # Insert data into the corresponding database
         conn.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -56,7 +64,7 @@ def log_to_sqlitecloud(record):
             record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
-            "DNS" if st.secrets.get("DASHBOARD_TYPE", "DNS") == "DNS" else "DOS",  # Determine the type (DNS/DOS)
+            "DNS" if dashboard_type == "DNS" else "DOS",  # Determine the type (DNS/DOS)
             float(record.get("reconstruction_error", 0)),
             int(record.get("anomaly", 0))
         ))
@@ -79,8 +87,17 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        # Connecting to SQLite Cloud database
-        conn = sqlite3.connect(f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/{st.secrets['SQLITE_DB']}?apikey={st.secrets['SQLITE_APIKEY']}")
+        # Get the active dashboard type (DNS or DOS)
+        dashboard_type = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Default to DNS if not set
+
+        # Set the correct database based on the selected dashboard type
+        if dashboard_type == "DNS":
+            database_url = f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/anomaly?apikey={st.secrets['SQLITE_APIKEY']}"
+        else:
+            database_url = f"sqlitecloud://{st.secrets['DOS_SQLITE_HOST']}:{st.secrets['DOS_SQLITE_PORT']}/dos?apikey={st.secrets['DOS_SQLITE_APIKEY']}"
+
+        # Connect to SQLite Cloud database
+        conn = sqlitecloud.connect(database_url)
         cursor = conn.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
@@ -93,44 +110,11 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         cols = [column[0] for column in cursor.description]
         df = pd.DataFrame(rows, columns=cols)
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-        
-        # Close the connection
+
         conn.close()
-        
+
         return df.dropna(subset=["timestamp"])
     
     except Exception as e:
         st.error(f"SQLite Cloud error: {e}")
-        return pd.DataFrame()
-
-# --- Function to Get Historical Data ---
-def get_historical(start_date, end_date):
-    try:
-        # Establish connection to SQLite Cloud
-        conn = sqlite3.connect(f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/{st.secrets['SQLITE_DB']}?apikey={st.secrets['SQLITE_APIKEY']}")
-        
-        # Query to fetch data based on the given start and end dates
-        query = f"""
-            SELECT * FROM anomalies
-            WHERE timestamp >= '{start_date}' AND timestamp <= '{end_date}'
-            ORDER BY timestamp DESC
-        """
-        
-        # Execute query
-        cursor = conn.execute(query)
-        rows = cursor.fetchall()
-        if not rows:
-            return pd.DataFrame()
-
-        cols = [column[0] for column in cursor.description]
-        df = pd.DataFrame(rows, columns=cols)
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-        
-        # Close the connection
-        conn.close()
-        
-        return df.dropna(subset=["timestamp"])
-    
-    except Exception as e:
-        st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
