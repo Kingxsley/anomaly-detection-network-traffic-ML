@@ -1,14 +1,18 @@
-# tabs/dos/live_stream.py
-
 import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
 from tabs.dos.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, DOS_API_URL
 
-def render_live_stream(thresh, highlight_color, alerts_enabled):
+def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="dos_live_refresh")
     st.header("Live DOS Stream")
+
+    # Initialize session_state variables if they don't exist
+    if "predictions" not in st.session_state:
+        st.session_state.predictions = []
+    if "attacks" not in st.session_state:
+        st.session_state.attacks = []
 
     records = get_dos_data()
     new_predictions = []
@@ -16,7 +20,6 @@ def render_live_stream(thresh, highlight_color, alerts_enabled):
     if records:
         for row in records:
             payload = {
-                "packet_count": row["packet_count"],
                 "byte_rate": row["byte_rate"]
             }
             try:
