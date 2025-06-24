@@ -8,7 +8,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
 import requests
-import sqlitecloud
+from sqlitecloud import Connection
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
@@ -17,7 +17,11 @@ INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
 INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "")
 INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "")
 INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
-SQLITECLOUD_URL = st.secrets.get("SQLITECLOUD_URL", "")
+SQLITE_HOST = st.secrets.get("SQLITE_HOST", "")
+SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))
+SQLITE_DB = st.secrets.get("SQLITE_DB", "")
+SQLITE_USER = st.secrets.get("SQLITE_USER", "")
+SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "")
 
 # --- Discord Alert ---
 def send_discord_alert(result):
@@ -51,14 +55,19 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
-        cursor = conn.cursor()
-        query = f"""
+        conn = Connection(
+            host=SQLITE_HOST,
+            port=SQLITE_PORT,
+            database=SQLITE_DB,
+            username=SQLITE_USER,
+            password=SQLITE_APIKEY,
+            ssl=True
+        )
+        cursor = conn.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
             ORDER BY timestamp DESC
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         if not rows:
             return pd.DataFrame()
@@ -73,9 +82,15 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 # --- SQLiteCloud Logger ---
 def log_to_sqlitecloud(record):
     try:
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
-        cursor = conn.cursor()
-        cursor.execute("""
+        conn = Connection(
+            host=SQLITE_HOST,
+            port=SQLITE_PORT,
+            database=SQLITE_DB,
+            username=SQLITE_USER,
+            password=SQLITE_APIKEY,
+            ssl=True
+        )
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
@@ -86,7 +101,7 @@ def log_to_sqlitecloud(record):
                 is_anomaly INTEGER
             );
         """)
-        cursor.execute("""
+        conn.execute("""
             INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
@@ -105,6 +120,8 @@ def log_to_sqlitecloud(record):
 # --- Get Real-time DNS Data ---
 def get_dns_data():
     try:
+        if not INFLUXDB_URL:
+            raise ValueError("No host specified.")
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
@@ -134,6 +151,8 @@ def get_dns_data():
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
+        if not INFLUXDB_URL:
+            raise ValueError("No host specified.")
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
