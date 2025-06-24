@@ -2,22 +2,26 @@ import streamlit as st
 import pandas as pd
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud, API_URL
+from tabs.utils import get_dns_data, send_discord_alert, log_to_sqlitecloud
 
+# Get the API_URL dynamically based on the dashboard type
+dashboard_type = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Default to DNS if not set
+
+# Set the appropriate API URL based on the dashboard type
+if dashboard_type == "DNS":
+    API_URL = st.secrets.get("API_URL", "")
+else:
+    API_URL = st.secrets.get("DOS_API_URL", "")
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
-    st.header(f"Live {st.secrets.get('DASHBOARD_TYPE', 'DNS')} Stream")
+    st.header(f"Live {dashboard_type} Stream")
 
-    # Load the appropriate data and configurations based on dashboard type
-    if st.secrets.get("DASHBOARD_TYPE", "DNS") == "DNS":
+    # Fetch DNS or DOS data based on the dashboard type
+    if dashboard_type == "DNS":
         records = get_dns_data()  # Use the DNS-specific data fetch function
-        api_url = st.secrets.get("API_URL")
-        discord_webhook = st.secrets.get("DISCORD_WEBHOOK")
-    else:  # DOS Dashboard
-        records = get_dos_data()  # Use a placeholder for DOS-specific data fetch function
-        api_url = st.secrets.get("DOS_API_URL")
-        discord_webhook = st.secrets.get("DOS_DISCORD_WEBHOOK")
+    else:
+        records = []  # Add DOS-specific data retrieval logic here
 
     new_predictions = []
 
@@ -28,14 +32,14 @@ def render(thresh, highlight_color, alerts_enabled):
                 "dns_rate": row["dns_rate"]
             }
             try:
-                response = requests.post(api_url, json=payload, timeout=20)
+                response = requests.post(API_URL, json=payload, timeout=20)
                 result = response.json()
                 if "anomaly" in result and "reconstruction_error" in result:
                     result.update(row)
                     result["label"] = "Attack" if result["anomaly"] == 1 else "Normal"
                     new_predictions.append(result)
                     if result["anomaly"] == 1 and alerts_enabled:
-                        send_discord_alert(result, discord_webhook)  # Send alert based on selected type
+                        send_discord_alert(result)  # Send alert based on selected type
             except Exception as e:
                 st.warning(f"API error: {e}")
 
