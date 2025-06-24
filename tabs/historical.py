@@ -3,8 +3,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.utils import get_historical
-
+from tabs.utils import get_historical  # Ensure this import is correct
 
 def render(thresh, highlight_color):
     st.header(f"Historical {st.secrets.get('DASHBOARD_TYPE', 'DNS')} Data")
@@ -16,10 +15,7 @@ def render(thresh, highlight_color):
         end_date = st.date_input("End Date", datetime.now())
 
     # Load the appropriate historical data based on DNS or DOS
-    if st.secrets.get("DASHBOARD_TYPE", "DNS") == "DNS":
-        df = get_historical(start_date, end_date)  # Existing function for DNS
-    else:  # DOS Dashboard
-        df = get_historical(start_date, end_date)  # You can replace this with the DOS-specific function if needed
+    df = get_historical(start_date, end_date)
 
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
