@@ -7,19 +7,19 @@ import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.utils import get_historical  # Use DoS-specific data fetching function
 
-def render(thresh, highlight_color):
+# Modify the render function to accept time_range, time_range_query_map, thresh, and highlight_color
+def render(time_range, time_range_query_map, thresh, highlight_color):
     st.header("DoS Historical Data")  # Update title for DoS
 
-    # Date range selection for historical data
-    col1, col2 = st.columns(2)
-    with col1:
-        start_date = st.date_input("Start Date", datetime.now() - timedelta(days=7))
-    with col2:
-        end_date = st.date_input("End Date", datetime.now())
+    # Use the time_range passed from main_dashboard.py
+    query_duration = time_range_query_map.get(time_range, "-24h")
+
+    start_date = pd.to_datetime("now") - pd.to_timedelta(query_duration)
+    end_date = pd.to_datetime("now")
 
     # Fetch the historical DoS data
     df = get_historical(start_date, end_date)
-    
+
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Simulating reconstruction error
