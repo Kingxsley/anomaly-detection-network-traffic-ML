@@ -150,7 +150,7 @@ def get_historical(start, end):
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
             |> range(start: {start.isoformat()}, stop: {end.isoformat()})
             |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "byte_rate")
+            |> filter(fn: (r) => r._field == "byte_rate")  # Ensure you're querying for byte_rate here
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
@@ -165,6 +165,7 @@ def get_historical(start, end):
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
+
 
 # --- Summary Dashboard Helpers ---
 def generate_attack_summary(df):
