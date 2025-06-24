@@ -39,6 +39,9 @@ def render(time_range, time_range_query_map):
         fig_hour = px.bar(hourly_counts, x="Hour", y="Attack Count", labels={"Hour": "Hour of Day"})
         st.plotly_chart(fig_hour, use_container_width=True)
 
+        peak_hour = hourly_counts.loc[hourly_counts["Attack Count"].idxmax()]
+        st.markdown(f"**Peak Attack Hour:** {peak_hour['Hour']}:00 with {peak_hour['Attack Count']} attacks")
+
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
         ip_counts.columns = ["source_ip", "count"]
