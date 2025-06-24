@@ -3,7 +3,7 @@
 import streamlit as st
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import DETAILED_URL, DASHBOARD_TYPE  # Import DASHBOARD_TYPE from utils.py
+from tabs.utils import DASHBOARD_TYPE  # Removed DETAILED_URL import
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
