@@ -53,6 +53,7 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
         with tab5:
             render_dns_historical(thresh, highlight_color)
 
+ 
     elif mode == "dos":
         with tab1:
             render_dos_overview(api_url, influx_measurement)
@@ -64,3 +65,5 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
             render_dos_metrics(influx_measurement)
         with tab5:
             render_dos_historical(api_url, influx_measurement, db_path)
+
+
