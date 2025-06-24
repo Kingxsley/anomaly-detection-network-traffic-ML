@@ -1,10 +1,15 @@
+# --- main app.py --- 
 import streamlit as st
-from tabs import overview, live_stream, manual_entry, metrics, historical
+import pandas as pd  # ✅ Added missing import
+from tabs import overview
+from tabs import live_stream
+from tabs import manual_entry
+from tabs import metrics
+from tabs import historical
 
-# --- Configuration for DoS Dashboard ---
-DASHBOARD_TYPE = "DOS"  # Set to "DOS" for DoS dashboard
+st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")  # Update title for DoS
 
-# --- Sidebar Settings ---
+# --- Sidebar Settings --- 
 time_range_query_map = {
     "Last 30 min": "-30m",
     "Last 1 hour": "-1h",
@@ -18,26 +23,28 @@ thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
 highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
 alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
-# --- State Initialization ---
-if "predictions" not in st.session_state:
-    st.session_state.predictions = []
-if "attacks" not in st.session_state:
+# --- State Initialization --- 
+if "predictions" not in st.session_state: 
+    st.session_state.predictions = [] 
+if "attacks" not in st.session_state: 
     st.session_state.attacks = []
 
-# --- Tabs Navigation ---
+# --- Tabs Navigation --- 
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
-with tabs[0]:
-    overview.render(time_range, time_range_query_map, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
+# Pass the correct `DASHBOARD_TYPE` (DoS) to each tab
 
-with tabs[1]:
-    live_stream.render(thresh, highlight_color, alerts_enabled, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
+with tabs[0]: 
+    overview.render(time_range, time_range_query_map, "DOS")  # Pass 'DOS' to overview
 
-with tabs[2]:
-    manual_entry.render(DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
+with tabs[1]: 
+    live_stream.render(thresh, highlight_color, alerts_enabled, "DOS")  # Pass 'DOS' to live stream
 
-with tabs[3]:
-    metrics.render(thresh, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
+with tabs[2]: 
+    manual_entry.render("DOS")  # Pass 'DOS' to manual entry
 
-with tabs[4]:
-    historical.render(thresh, highlight_color, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
+with tabs[3]: 
+    metrics.render(thresh, "DOS")  # Pass 'DOS' to metrics
+
+with tabs[4]: 
+    historical.render(thresh, highlight_color, "DOS")  # Pass 'DOS' to historical data
