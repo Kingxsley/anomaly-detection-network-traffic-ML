@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.dos.utils import get_historical_dos_data
+from tabs.dos.utils import get_dos_historical_data
 
 def render(thresh, highlight_color):
     st.header("Historical DOS Data")
@@ -15,7 +15,7 @@ def render(thresh, highlight_color):
     with col2:
         end_date = st.date_input("End Date", datetime.now())
 
-    df = get_historical_dos_data(start_date, end_date)
+    df = get_dos_historical_data(start_date, end_date)
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
         df["reconstruction_error"] = np.random.default_rng().random(len(df))
@@ -32,7 +32,7 @@ def render(thresh, highlight_color):
 
         rows_per_page = 100
         total_pages = (len(df) - 1) // rows_per_page + 1
-        page = st.number_input("Historical Page", 1, total_pages, 1, key="dos_hist_page") - 1
+        page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_dos_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
         def highlight_hist(row):
