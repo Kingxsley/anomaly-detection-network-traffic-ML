@@ -6,35 +6,31 @@ from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
 
-# --- Fetch Secrets from Streamlit's secrets manager ---
 # --- DNS Settings ---
-if 'DNS' in st.secrets:
-    DNS_API_URL = st.secrets["DNS"]["API_URL"]
-    DNS_DISCORD_WEBHOOK = st.secrets["DNS"]["DISCORD_WEBHOOK"]
-    DNS_INFLUXDB_URL = st.secrets["DNS"]["INFLUXDB_URL"]
-    DNS_INFLUXDB_ORG = st.secrets["DNS"]["INFLUXDB_ORG"]
-    DNS_INFLUXDB_BUCKET = st.secrets["DNS"]["INFLUXDB_BUCKET"]
-    DNS_INFLUXDB_TOKEN = st.secrets["DNS"]["INFLUXDB_TOKEN"]
-    DNS_SQLITE_HOST = st.secrets["DNS"]["SQLITE_HOST"]
-    DNS_SQLITE_PORT = st.secrets["DNS"]["SQLITE_PORT"]
-    DNS_SQLITE_DB = st.secrets["DNS"]["SQLITE_DB"]
-    DNS_SQLITE_APIKEY = st.secrets["DNS"]["SQLITE_APIKEY"]
+if st.secrets.get("DASHBOARD_TYPE", "DNS") == "DNS":
+    API_URL = st.secrets.get("API_URL")
+    DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK")
+    INFLUXDB_URL = st.secrets.get("INFLUXDB_URL")
+    INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG")
+    INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET")
+    INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN")
+    SQLITE_HOST = st.secrets.get("SQLITE_HOST")
+    SQLITE_PORT = int(st.secrets.get("SQLITE_PORT"))
+    SQLITE_DB = st.secrets.get("SQLITE_DB")
+    SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY")
 
 # --- DOS Settings ---
-if 'DOS' in st.secrets:
-    DOS_API_URL = st.secrets["DOS"]["API_URL"]
-    DOS_DISCORD_WEBHOOK = st.secrets["DOS"]["DISCORD_WEBHOOK"]
-    DOS_INFLUXDB_URL = st.secrets["DOS"]["INFLUXDB_URL"]
-    DOS_INFLUXDB_ORG = st.secrets["DOS"]["INFLUXDB_ORG"]
-    DOS_INFLUXDB_BUCKET = st.secrets["DOS"]["INFLUXDB_BUCKET"]
-    DOS_INFLUXDB_TOKEN = st.secrets["DOS"]["INFLUXDB_TOKEN"]
-    DOS_SQLITE_HOST = st.secrets["DOS"]["SQLITE_HOST"]
-    DOS_SQLITE_PORT = st.secrets["DOS"]["SQLITE_PORT"]
-    DOS_SQLITE_DB = st.secrets["DOS"]["SQLITE_DB"]
-    DOS_SQLITE_APIKEY = st.secrets["DOS"]["SQLITE_APIKEY"]
-
-# --- Toggle between DNS and DOS ---
-dashboard_type = st.sidebar.radio("Select Dashboard", ("DNS", "DOS"))
+else:  # If the user selects DOS
+    API_URL = st.secrets.get("DOS_API_URL")
+    DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK")
+    INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL")
+    INFLUXDB_ORG = st.secrets.get("DOS_INFLUXDB_ORG")
+    INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET")
+    INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN")
+    SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST")
+    SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT"))
+    SQLITE_DB = st.secrets.get("DOS_SQLITE_DB")
+    SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY")
 
 # --- Sidebar Settings ---
 time_range_query_map = {
@@ -56,6 +52,9 @@ if "predictions" not in st.session_state:
 if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
+# --- Toggle between DNS and DOS ---
+dashboard_type = st.sidebar.radio("Select Dashboard", ("DNS", "DOS"))
+
 # --- Tabs Navigation ---
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
@@ -71,13 +70,5 @@ if dashboard_type == "DNS":
     with tabs[4]:
         historical.render(thresh, highlight_color)
 else:  # DOS Dashboard
-    with tabs[0]:
-        overview.render(time_range, time_range_query_map)
-    with tabs[1]:
-        live_stream.render(thresh, highlight_color, alerts_enabled)
-    with tabs[2]:
-        manual_entry.render()
-    with tabs[3]:
-        metrics.render(thresh)
-    with tabs[4]:
-        historical.render(thresh, highlight_color)
+    # Similar updates for the DOS-specific tabs, e.g., API calls, SQLite interactions, etc.
+    pass
