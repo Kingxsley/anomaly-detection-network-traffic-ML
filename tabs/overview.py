@@ -3,6 +3,7 @@ import pandas as pd
 import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
 from tabs.utils import load_predictions_from_sqlitecloud  # Updated import
+from tabs.utils import DASHBOARD_TYPE
 
 def render(time_range, time_range_query_map):
     st_autorefresh(interval=30000, key="overview_refresh")
