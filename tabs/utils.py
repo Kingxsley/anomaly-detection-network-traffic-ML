@@ -39,7 +39,12 @@ def send_discord_alert(result):
 def log_to_sqlitecloud(record):
     try:
         import sqlitecloud
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn = sqlitecloud.connect(
+            SQLITECLOUD_URL,
+            sslmode="require",
+            server_hostname="cfolwawehk.g2.sqlite.cloud"  # extracted from your URL
+        )
+
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
