@@ -39,7 +39,10 @@ def send_discord_alert(result):
 def log_to_sqlitecloud(record):
     try:
         import sqlitecloud
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn = sqlitecloud.connect(
+            SQLITECLOUD_URL,
+            server_hostname="cfolwawehk.g2.sqlite.cloud"  # ✅ Required by SQLite Cloud
+        )
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
@@ -56,7 +59,7 @@ def log_to_sqlitecloud(record):
             INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+            record.get("timestamp"),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
             "DNS",
@@ -84,16 +87,18 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         else:
             delta = timedelta(hours=24)
 
-        cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
+        cutoff = (datetime.now() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn = sqlitecloud.connect(
+            SQLITECLOUD_URL,
+            server_hostname="cfolwawehk.g2.sqlite.cloud"  # ✅ Remove sslmode, add only this
+        )
         cursor = conn.cursor()
-        query = f"""
+        cursor.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
             ORDER BY timestamp DESC
-        """
-        cursor.execute(query)
+        """)
         rows = cursor.fetchall()
         if not rows:
             return pd.DataFrame()
@@ -104,6 +109,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
     except Exception as e:
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
+
 
 
 
