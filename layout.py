@@ -1,8 +1,21 @@
 # layout.py
+
 from tabs.dns.overview import render_overview as render_dns_overview
+from tabs.dns.live_stream import render as render_dns_live_stream
+from tabs.dns.manual_entry import render as render_dns_manual_entry
+from tabs.dns.metrics import render as render_dns_metrics
+from tabs.dns.historical import render as render_dns_historical
+
+from tabs.dos.overview import render_overview as render_dos_overview
+from tabs.dos.live_stream import render_live_stream as render_dos_live_stream
+from tabs.dos.manual_entry import render_manual_entry as render_dos_manual_entry
+from tabs.dos.metrics import render_metrics as render_dos_metrics
+from tabs.dos.historical import render_historical as render_dos_historical
 
 def render_dashboard(title, api_url, influx_measurement, db_path, mode):
-    st.set_page_config(page_title=title, layout="wide")
+    # Remove st.set_page_config from here
+    # st.set_page_config(page_title=title, layout="wide")
+    
     st.title(title)
 
     # Shared sidebar filters
