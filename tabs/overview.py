@@ -49,13 +49,12 @@ def render(time_range, time_range_query_map):
             top_sources.columns = ["Source IP", "Anomaly Count"]
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
-            st.markdown(f"""
-                <div style='padding:10px; border:1px solid #ccc; border-radius:10px; background:#f9f9f9;'>
-                    <strong>Avg. Reconstruction Error:</strong> {avg_score:.4f} &nbsp;|&nbsp;
-                    <strong>Max. Reconstruction Error:</strong> {max_score:.4f} &nbsp;|&nbsp;
-                    <strong>Peak Hour of Attacks:</strong> {peak_hour}:00
-                </div>
-            """, unsafe_allow_html=True)
+            stats_df = pd.DataFrame({
+                "Metric": ["Avg. Reconstruction Error", "Max. Reconstruction Error", "Most Active Hour for Attacks"],
+                "Value": [f"{avg_score:.4f}", f"{max_score:.4f}", f"{peak_hour}:00"]
+            })
+
+            st.table(stats_df)
 
             st.markdown("### Top Source IPs by Anomaly Count")
             top_sources_sorted = top_sources.sort_values(by="Anomaly Count", ascending=False)
