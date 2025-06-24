@@ -2,12 +2,12 @@
 
 import streamlit as st
 import pandas as pd
-from tabs.utils import get_data, DASHBOARD_TYPE  # Ensure DoS functions are used
+from tabs.utils import get_data  # Ensure only get_data is imported for DoS
 
-def render(thresh, dashboard_type):
-    st.header(f"{dashboard_type} Metrics")  # Update header for DoS
+def render(thresh):
+    st.header("DoS Metrics")  # Static header for DoS
 
-    df = load_predictions_from_sqlitecloud(time_window="-24h", dashboard_type=dashboard_type)
+    df = load_predictions_from_sqlitecloud(time_window="-24h")
 
     if not df.empty:
         st.markdown("### Attack Overview")
