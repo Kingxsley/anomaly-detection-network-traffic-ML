@@ -13,6 +13,7 @@ import sqlitecloud
 import warnings
 
 # --- DOS Secrets ---
+# --- DOS Secrets ---
 API_URL = st.secrets.get("DOS_API_URL", "")
 DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
 INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
@@ -23,6 +24,7 @@ SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
 SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
 SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
 SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
+
 
 # --- Discord Alert ---
 def send_discord_alert(result):
