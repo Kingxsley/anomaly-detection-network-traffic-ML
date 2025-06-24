@@ -13,6 +13,9 @@ def render(time_range, time_range_query_map):
     if not df.empty:
         total_predictions = len(df)
         attack_rate = df["is_anomaly"].mean()
+        avg_error = df["anomaly_score"].mean()
+        max_error = df["anomaly_score"].max()
+        min_error = df["anomaly_score"].min()
 
         recent_cutoff = pd.Timestamp.now().replace(tzinfo=None) - pd.Timedelta(hours=1)
         recent_attacks = df[(df["timestamp"] >= recent_cutoff) & (df["is_anomaly"] == 1)]
@@ -21,6 +24,11 @@ def render(time_range, time_range_query_map):
         col1.metric("Total Predictions", total_predictions)
         col2.metric("Attack Rate", f"{attack_rate:.2%}")
         col3.metric("Recent Attacks", len(recent_attacks))
+
+        with st.expander("Attack Summary", expanded=True):
+            st.write(f"**Average Reconstruction Error:** {avg_error:.4f}")
+            st.write(f"**Maximum Error:** {max_error:.4f}")
+            st.write(f"**Minimum Error:** {min_error:.4f}")
 
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
