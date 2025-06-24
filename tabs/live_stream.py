@@ -2,15 +2,15 @@
 
 import streamlit as st
 import requests
-import pandas as pd  # <-- Ensure pandas is imported
+import pandas as pd
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_data, DASHBOARD_TYPE  # Import get_data here
+from tabs.utils import get_data, DASHBOARD_TYPE  # Use DoS-specific functions from utils
 
 def render(thresh, highlight_color, alerts_enabled, dashboard_type):
     st_autorefresh(interval=10000, key="live_refresh")
-    st.header("Live Stream")
+    st.header("Live DOS Stream")  # Set header for DoS
 
-    # Use the appropriate API URL based on dashboard_type
+    # Use the appropriate API URL for DoS
     API_URL = st.secrets.get(f"{'DOS' if dashboard_type == 'DOS' else 'API'}_URL")
     records = get_data(API_URL)
 
@@ -39,7 +39,7 @@ def render(thresh, highlight_color, alerts_enabled, dashboard_type):
             for r in new_predictions:
                 log_to_sqlitecloud(r)
 
-    df = pd.DataFrame(st.session_state.predictions)  # Create DataFrame using pd
+    df = pd.DataFrame(st.session_state.predictions)
     if not df.empty:
         st.dataframe(df)
     else:
