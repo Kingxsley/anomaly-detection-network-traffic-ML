@@ -1,23 +1,43 @@
 import streamlit as st
 import requests
-from utils import get_live_data
+from streamlit_autorefresh import st_autorefresh
+from tabs.utils import get_data, send_discord_alert, log_to_sqlitecloud
 
 def render(thresh, highlight_color, alerts_enabled):
-    st.title("Live Stream")
+    st_autorefresh(interval=10000, key="live_refresh")
+    st.header("Live Stream")
 
-    if st.session_state.DASHBOARD_TYPE == "DNS":
-        records = get_live_data("DNS")
-    else:  # DOS
-        records = get_live_data("DOS")
+    # Use the appropriate API URL based on DASHBOARD_TYPE
+    API_URL = st.secrets.get("API_URL" if DASHBOARD_TYPE == "DNS" else "DOS_API_URL")
+    records = get_data(API_URL)
 
-    # Process and display data (same logic for DNS and DOS)
-    for record in records:
-        st.write(record)
-        # Trigger alert if necessary and log to database
-        if alerts_enabled and record["anomaly"] == 1:
-            send_alert(record)
+    new_predictions = []
+    if records:
+        for row in records:
+            payload = {
+                "inter_arrival_time": row["inter_arrival_time"],
+                "dns_rate": row["dns_rate"]
+            }
+            try:
+                response = requests.post(API_URL, json=payload, timeout=20)
+                result = response.json()
+                if "anomaly" in result and "reconstruction_error" in result:
+                    result.update(row)
+                    result["label"] = "Attack" if result["anomaly"] == 1 else "Normal"
+                    new_predictions.append(result)
+                    if result["anomaly"] == 1 and alerts_enabled:
+                        send_discord_alert(result)
+            except Exception as e:
+                st.warning(f"API error: {e}")
 
-# Placeholder for sending alerts (implement as needed)
-def send_alert(record):
-    # Send an alert (e.g., to Discord or other platforms)
-    pass
+        if new_predictions:
+            st.session_state.predictions.extend(new_predictions)
+            st.session_state.attacks.extend([r for r in new_predictions if r["anomaly"] == 1])
+            for r in new_predictions:
+                log_to_sqlitecloud(r)
+
+    df = pd.DataFrame(st.session_state.predictions)
+    if not df.empty:
+        st.dataframe(df)
+    else:
+        st.info("No predictions yet.")
