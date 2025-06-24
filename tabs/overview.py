@@ -4,6 +4,7 @@ import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
 from tabs.utils import load_predictions_from_sqlitecloud
 
+
 def render(time_range, time_range_query_map):
     st_autorefresh(interval=30000, key="overview_refresh")
     st.title("DNS Anomaly Detection Overview")
@@ -34,13 +35,14 @@ def render(time_range, time_range_query_map):
         st.markdown("### Time of Most Attacks")
         attack_df = df[df["is_anomaly"] == 1].copy()
         attack_df["hour"] = pd.to_datetime(attack_df["timestamp"]).dt.hour
-        hourly_counts = attack_df["hour"].value_counts().sort_index().reset_index()
-        hourly_counts.columns = ["Hour", "Attack Count"]
-        fig_hour = px.bar(hourly_counts, x="Hour", y="Attack Count", labels={"Hour": "Hour of Day"})
-        st.plotly_chart(fig_hour, use_container_width=True)
+        peak_hour_series = attack_df["hour"].value_counts().sort_values(ascending=False)
 
-        peak_hour = hourly_counts.loc[hourly_counts["Attack Count"].idxmax()]
-        st.markdown(f"**Peak Attack Hour:** {peak_hour['Hour']}:00 with {peak_hour['Attack Count']} attacks")
+        if not peak_hour_series.empty:
+            peak_hour = peak_hour_series.index[0]
+            peak_count = peak_hour_series.iloc[0]
+            st.markdown(f"**Most Attacks Occurred Around:** {peak_hour}:00 with {peak_count} attacks")
+        else:
+            st.markdown("No attacks found in the selected time range.")
 
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
