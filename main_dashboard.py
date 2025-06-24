@@ -1,13 +1,26 @@
 import streamlit as st
 from tabs import overview, live_stream, manual_entry, metrics, historical
 
-# Use a selectbox or radio button to choose between DNS and DOS dashboards
-dashboard_type = st.selectbox("Select Dashboard Type", ["DNS", "DOS"])
+# Sidebar for selecting the dashboard type (DNS or DOS)
+dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0)
 
-# Set the selected dashboard type in Streamlit's secrets
+# Sidebar for settings and configurations
+st.sidebar.header("Settings")
+
+# Time Range Selection
+time_range = st.sidebar.selectbox("Select Time Range", ["-24h", "-48h", "-7d", "-30d"], index=0)
+
+# Toggle for enabling/disabling alerts
+alerts_enabled = st.sidebar.checkbox("Enable Alerts", value=True)
+
+# Add any additional settings (e.g., threshold, highlight color, etc.)
+threshold = st.sidebar.slider("Anomaly Detection Threshold", 0.0, 1.0, 0.5, 0.01)
+highlight_color = st.sidebar.color_picker("Highlight Color", value="#FFFF00")
+
+# Set the selected dashboard type in Streamlit's secrets dynamically
 st.secrets["DASHBOARD_TYPE"] = dashboard_type
 
-# Display the selected dashboard
+# Display the selected dashboard in the main content area
 if dashboard_type == "DNS":
     st.title("DNS Anomaly Detection Dashboard")
 else:
@@ -15,16 +28,16 @@ else:
 
 # Add tabs for each section (Overview, Live Stream, Manual Entry, Metrics, Historical)
 tabs = ["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical"]
-selected_tab = st.selectbox("Select a Tab", tabs)
+selected_tab = st.sidebar.selectbox("Select a Tab", tabs)
 
-# Rendering the corresponding tab content
+# Render the selected tab content
 if selected_tab == "Overview":
-    overview.render(time_range="-24h", time_range_query_map={})
+    overview.render(time_range, {"-24h": "-24h", "-48h": "-48h", "-7d": "-7d", "-30d": "-30d"})
 elif selected_tab == "Live Stream":
-    live_stream.render(thresh=0.5, highlight_color="yellow", alerts_enabled=True)
+    live_stream.render(thresh=threshold, highlight_color=highlight_color, alerts_enabled=alerts_enabled)
 elif selected_tab == "Manual Entry":
     manual_entry.render()
 elif selected_tab == "Metrics":
-    metrics.render(thresh=0.5)
+    metrics.render(thresh=threshold)
 elif selected_tab == "Historical":
-    historical.render(thresh=0.5, highlight_color="yellow")
+    historical.render(thresh=threshold, highlight_color=highlight_color)
