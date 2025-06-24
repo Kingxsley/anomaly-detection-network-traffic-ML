@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
+import requests
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
@@ -16,6 +17,24 @@ INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "")
 INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "")
 INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
 SQLITECLOUD_URL = st.secrets.get("SQLITECLOUD_URL", "")
+
+# --- Discord Alert ---
+def send_discord_alert(result):
+    message = {
+        "content": (
+            f"\U0001f6a8 **DNS Anomaly Detected!**\n"
+            f"**Timestamp:** {result.get('timestamp')}\n"
+            f"**DNS Rate:** {result.get('dns_rate')}\n"
+            f"**Inter-arrival Time:** {result.get('inter_arrival_time')}\n"
+            f"**Reconstruction Error:** {float(result.get('reconstruction_error', 0)):.6f}\n"
+            f"**Source IP:** {result.get('source_ip')}\n"
+            f"**Destination IP:** {result.get('dest_ip')}"
+        )
+    }
+    try:
+        requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
+    except Exception as e:
+        st.warning(f"Discord alert failed: {e}")
 
 # --- SQLiteCloud Loader ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
