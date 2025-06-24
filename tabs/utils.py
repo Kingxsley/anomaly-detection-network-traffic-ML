@@ -8,7 +8,7 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
 import requests
-from sqlitecloud import Connection
+import sqlitecloud
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
@@ -20,7 +20,6 @@ INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
 SQLITE_HOST = st.secrets.get("SQLITE_HOST", "")
 SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))
 SQLITE_DB = st.secrets.get("SQLITE_DB", "")
-SQLITE_USER = st.secrets.get("SQLITE_USER", "")
 SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "")
 
 # --- Discord Alert ---
@@ -55,14 +54,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = Connection(
-            host=SQLITE_HOST,
-            port=SQLITE_PORT,
-            database=SQLITE_DB,
-            username=SQLITE_USER,
-            password=SQLITE_APIKEY,
-            ssl=True
-        )
+        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
         cursor = conn.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
@@ -82,14 +74,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 # --- SQLiteCloud Logger ---
 def log_to_sqlitecloud(record):
     try:
-        conn = Connection(
-            host=SQLITE_HOST,
-            port=SQLITE_PORT,
-            database=SQLITE_DB,
-            username=SQLITE_USER,
-            password=SQLITE_APIKEY,
-            ssl=True
-        )
+        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
