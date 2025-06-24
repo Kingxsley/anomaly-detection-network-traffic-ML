@@ -4,6 +4,13 @@ from tabs import overview, live_stream, manual_entry, metrics, historical
 # Sidebar for selecting the dashboard type (DNS or DOS)
 dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0)
 
+# Store the selected dashboard type in session state
+if "DASHBOARD_TYPE" not in st.session_state:
+    st.session_state.DASHBOARD_TYPE = "DNS"  # Default to DNS
+
+# Update the session state when the dashboard type is toggled
+st.session_state.DASHBOARD_TYPE = dashboard_type
+
 # Sidebar for settings and configurations (keep the original sidebar structure)
 st.sidebar.header("Settings")
 
@@ -16,13 +23,6 @@ alerts_enabled = st.sidebar.checkbox("Enable Alerts", value=True)
 # Add any additional settings (e.g., threshold, highlight color, etc.)
 threshold = st.sidebar.slider("Anomaly Detection Threshold", 0.0, 1.0, 0.5, 0.01)
 highlight_color = st.sidebar.color_picker("Highlight Color", value="#FFFF00")
-
-# Set the selected dashboard type in session state (for toggling)
-if "DASHBOARD_TYPE" not in st.session_state:
-    st.session_state.DASHBOARD_TYPE = "DNS"  # Default to DNS if not set
-
-# Update the session state when the dashboard type is toggled
-st.session_state.DASHBOARD_TYPE = dashboard_type
 
 # Display the selected dashboard in the main content area
 if st.session_state.DASHBOARD_TYPE == "DNS":
