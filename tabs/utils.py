@@ -149,12 +149,16 @@ def get_historical(start, end):
         if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
         
+        # Ensure start and end are in the correct string format
+        start_str = start.isoformat()
+        end_str = end.isoformat()
+
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
-            |> range(start: {start.isoformat()}, stop: {end.isoformat()})
-            |> filter(fn: (r) => r._measurement == "dos")  # Ensure it's querying DoS data
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")  # Correct fields for DoS
+            |> range(start: {start_str}, stop: {end_str})
+            |> filter(fn: (r) => r._measurement == "dos")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
