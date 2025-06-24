@@ -4,7 +4,7 @@ from tabs import overview, live_stream, manual_entry, metrics, historical
 # Sidebar for selecting the dashboard type (DNS or DOS)
 dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0)
 
-# Sidebar for settings and configurations
+# Sidebar for settings and configurations (keep the original sidebar structure)
 st.sidebar.header("Settings")
 
 # Time Range Selection
@@ -21,7 +21,7 @@ highlight_color = st.sidebar.color_picker("Highlight Color", value="#FFFF00")
 if "DASHBOARD_TYPE" not in st.session_state:
     st.session_state.DASHBOARD_TYPE = "DNS"  # Default to DNS if not set
 
-# Set the dashboard type to session state based on the selection
+# Update the session state when the dashboard type is toggled
 st.session_state.DASHBOARD_TYPE = dashboard_type
 
 # Display the selected dashboard in the main content area
@@ -34,7 +34,7 @@ else:
 tabs = ["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical"]
 selected_tab = st.sidebar.selectbox("Select a Tab", tabs)
 
-# Render the selected tab content
+# Render the selected tab content based on dashboard type
 if selected_tab == "Overview":
     overview.render(time_range, {"-24h": "-24h", "-48h": "-48h", "-7d": "-7d", "-30d": "-30d"})
 elif selected_tab == "Live Stream":
