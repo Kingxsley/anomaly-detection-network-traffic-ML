@@ -5,15 +5,15 @@ import requests
 from datetime import datetime
 
 def render(dashboard_type):
-    st.header(f"Manual Entry - {dashboard_type}")  # Display the header for DoS
+    st.header(f"Manual Entry - {dashboard_type}")  # Display DoS in header
     col1, col2 = st.columns(2)
     with col1:
-        inter_arrival_time = st.number_input("Inter Arrival Time", value=0.01)  # DoS-specific field
+        inter_arrival_time = st.number_input("Inter Arrival Time", value=0.01)  # Inter-arrival time for DoS
     with col2:
-        dos_rate = st.number_input("DoS Rate", value=5.0)  # DoS rate field
+        dos_rate = st.number_input("DoS Rate", value=5.0)  # Correct DoS rate field
 
-    # Use the appropriate API URL for DoS
-    API_URL = st.secrets.get(f"{'DOS' if dashboard_type == 'DOS' else 'API'}_URL")
+    # Use the correct API URL for DoS from config
+    API_URL = DOS_API_URL
 
     if st.button("Predict"):
         try:
