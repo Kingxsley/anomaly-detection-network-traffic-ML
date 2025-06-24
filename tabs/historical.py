@@ -18,8 +18,8 @@ def render(thresh, highlight_color):
     df = get_historical(start_date, end_date)
 
     if not df.empty:
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df["reconstruction_error"] = np.random.default_rng().random(len(df))
+        # Add reconstruction_error and anomaly columns for visualization
+        df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Simulated for demonstration
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
 
@@ -43,18 +43,29 @@ def render(thresh, highlight_color):
 
         # Plotting the selected chart type
         if chart_type == "Line":
-            chart = px.line(df, x="timestamp", y="dns_rate", color="label",
-                            color_discrete_map={"Normal": "blue", "Attack": "red"})
+            # Ensure 'dns_rate' exists or use another valid column
+            if 'dns_rate' in df.columns:
+                chart = px.line(df, x="timestamp", y="dns_rate", color="label",
+                                color_discrete_map={"Normal": "blue", "Attack": "red"})
+            else:
+                st.warning("'dns_rate' column is not available, plotting 'reconstruction_error' instead.")
+                chart = px.line(df, x="timestamp", y="reconstruction_error", color="label",
+                                color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Bar":
-            chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
-                           color_discrete_map={"Normal": "blue", "Attack": "red"})
+            # Check if 'dns_rate' exists or fall back to 'reconstruction_error'
+            if 'dns_rate' in df.columns:
+                chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
+                               color_discrete_map={"Normal": "blue", "Attack": "red"})
+            else:
+                chart = px.bar(df, x="timestamp", y="reconstruction_error", color="label",
+                               color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Pie":
             chart = px.pie(df, names="label")
         elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.area(df, x="timestamp", y="reconstruction_error", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.scatter(df, x="timestamp", y="reconstruction_error", color="label",
                                color_discrete_map={"Normal": "blue", "Attack": "red"})
 
         st.plotly_chart(chart, use_container_width=True)
