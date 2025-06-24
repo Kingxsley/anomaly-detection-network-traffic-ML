@@ -1,16 +1,12 @@
-# tabs/dos/overview.py
-
 import streamlit as st
 import pandas as pd
-import plotly.express as px
-from streamlit_autorefresh import st_autorefresh
 from tabs.dos.utils import load_predictions_from_sqlitecloud
 
-def render_overview(time_range, time_range_query_map):  # Ensure function is named render_overview
+def render_overview(api_url, influx_measurement, time_range, time_range_query_map):
     st_autorefresh(interval=30000, key="overview_refresh")
     st.title("DOS Anomaly Detection Overview")
-    
-    query_duration = time_range_query_map.get(time_range, "-24h")
+    query_duration = time_range_query_map.get(time_range, "-24h")  # Ensure this is a dictionary and time_range is a valid key
+
     df = load_predictions_from_sqlitecloud(time_window=query_duration)
 
     if not df.empty:
