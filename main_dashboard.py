@@ -1,10 +1,8 @@
-# main_dashboard.py
-
 import streamlit as st
 from tabs import overview, live_stream, manual_entry, metrics, historical
 
-# --- Configuration based on Dashboard Type ---
-DASHBOARD_TYPE = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Set default to DNS if not specified
+# --- Configuration for DoS Dashboard ---
+DASHBOARD_TYPE = "DOS"  # Set to "DOS" for DoS dashboard
 
 # --- Sidebar Settings ---
 time_range_query_map = {
