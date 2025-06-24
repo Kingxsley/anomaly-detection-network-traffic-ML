@@ -1,28 +1,26 @@
 # live_stream.py
 
 import streamlit as st
-import requests
 import pandas as pd
+import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import DOS_API_URL  # Use the correct DoS API URL from config
+from tabs.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, DOS_API_URL
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
-    st.header("Live DoS Stream")  # Set header for DoS
+    st.header("Live DoS Stream")  # Static title for DoS
 
-    # Use the correct API URL for DoS
-    API_URL = DOS_API_URL
-    records = get_data()  # Fetch DoS data from the correct API
-
+    records = get_dos_data()  # Fetch DoS data from the correct API
     new_predictions = []
+
     if records:
         for row in records:
             payload = {
-                "inter_arrival_time": row["inter_arrival_time"],  # DoS-specific field
-                "dos_rate": row["dos_rate"]  # DoS-specific field
+                "inter_arrival_time": row["inter_arrival_time"],
+                "dos_rate": row["dos_rate"]
             }
             try:
-                response = requests.post(API_URL, json=payload, timeout=20)
+                response = requests.post(DOS_API_URL, json=payload, timeout=20)
                 result = response.json()
                 if "anomaly" in result and "reconstruction_error" in result:
                     result.update(row)
@@ -38,9 +36,20 @@ def render(thresh, highlight_color, alerts_enabled):
             st.session_state.attacks.extend([r for r in new_predictions if r["anomaly"] == 1])
             for r in new_predictions:
                 log_to_sqlitecloud(r)
+            st.session_state.predictions = st.session_state.predictions[-1000:]
+            st.session_state.attacks = st.session_state.attacks[-1000:]
 
     df = pd.DataFrame(st.session_state.predictions)
     if not df.empty:
-        st.dataframe(df)
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        rows_per_page = 100
+        total_pages = (len(df) - 1) // rows_per_page + 1
+        page_number = st.number_input("Page", min_value=1, max_value=total_pages, value=1, step=1, key="live_page") - 1
+        paged_df = df.iloc[page_number * rows_per_page:(page_number + 1) * rows_per_page]
+
+        def highlight(row):
+            return [f"background-color: {highlight_color}" if row["anomaly"] == 1 else ""] * len(row)
+
+        st.dataframe(paged_df.style.apply(highlight, axis=1), key="live_table")
     else:
         st.info("No predictions yet.")
