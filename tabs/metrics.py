@@ -1,22 +1,23 @@
+# metrics.py
+
 import streamlit as st
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
+import pandas as pd
+from tabs.utils import get_data, DASHBOARD_TYPE  # Ensure DoS functions are used
 
-def render(thresh):
-    st.title("Metrics")
+def render(thresh, dashboard_type):
+    st.header(f"{dashboard_type} Metrics")  # Update header for DoS
 
-    # Fetch metrics data for DNS or DOS
-    if st.session_state.DASHBOARD_TYPE == "DNS":
-        df = fetch_metrics_data("DNS")
-    else:  # DOS
-        df = fetch_metrics_data("DOS")
+    df = load_predictions_from_sqlitecloud(time_window="-24h", dashboard_type=dashboard_type)
 
     if not df.empty:
-        y_true = df["label"]
-        y_pred = df["prediction"]
+        st.markdown("### Attack Overview")
+        st.write(f"Total predictions: {len(df)}")
+        st.write(f"Total attacks: {df[df['is_anomaly'] == 1].shape[0]}")
+        st.write(f"Attack rate: {df['is_anomaly'].mean():.2%}")
 
-        st.metric("Accuracy", accuracy_score(y_true, y_pred))
-        st.metric("Precision", precision_score(y_true, y_pred))
-        st.metric("Recall", recall_score(y_true, y_pred))
-        st.metric("F1 Score", f1_score(y_true, y_pred))
-    else:
-        st.warning("No metrics data found.")
+        # Show metrics like reconstruction error, attack distribution, etc.
+        st.write(f"Avg Reconstruction Error: {df['anomaly_score'].mean():.4f}")
+        st.write(f"Max Reconstruction Error: {df['anomaly_score'].max():.4f}")
+        st.write(f"Min Reconstruction Error: {df['anomaly_score'].min():.4f}")
+        
+        st.bar_chart(df['anomaly_score'])
