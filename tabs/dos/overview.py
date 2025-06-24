@@ -1,4 +1,3 @@
-# tabs/dos/overview.py
 import streamlit as st
 import os
 import pandas as pd
@@ -11,62 +10,8 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- Secrets ---
-API_URL = st.secrets.get("API_URL", "")
-DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "")
-INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
-INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "")
-INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "")
-INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
-SQLITE_HOST = st.secrets.get("SQLITE_HOST", "")
-SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))
-SQLITE_DB = st.secrets.get("SQLITE_DB", "dos")
-SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "")
-
-
-def send_discord_alert(result):
-    message = {
-        "content": (
-            f"\U0001f6a8 **DOS Anomaly Detected!**\n"
-            f"**Timestamp:** {result.get('timestamp')}\n"
-            f"**Source IP:** {result.get('source_ip')}\n"
-            f"**Destination IP:** {result.get('dest_ip')}\n"
-            f"**Reconstruction Error:** {float(result.get('reconstruction_error', 0)):.6f}"
-        )
-    }
-    try:
-        requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
-    except Exception as e:
-        st.warning(f"Discord alert failed: {e}")
-
-
-def load_predictions_from_sqlitecloud(time_window="-24h"):
-    try:
-        delta = timedelta(hours=int(time_window.strip("-h"))) if "h" in time_window else timedelta(days=1)
-        cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
-
-        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
-        cursor = conn.execute(f"""
-            SELECT * FROM dos_anomalies
-            WHERE timestamp >= '{cutoff}'
-            ORDER BY timestamp DESC
-        """)
-        rows = cursor.fetchall()
-        if not rows:
-            return pd.DataFrame()
-        cols = [column[0] for column in cursor.description]
-        df = pd.DataFrame(rows, columns=cols)
-        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=AttributeError)
-            conn.close()
-
-        return df.dropna(subset=["timestamp"])
-    except Exception as e:
-        st.error(f"SQLite Cloud error: {e}")
-        return pd.DataFrame()
-
+# ✅ FIXED: Corrected import
+from tabs.dos.utils import load_predictions_from_sqlitecloud, send_discord_alert
 
 def render_overview(api_url, influx_measurement):
     st_autorefresh(interval=60000, key="overview_refresh")
@@ -126,4 +71,3 @@ def render_overview(api_url, influx_measurement):
         st.dataframe(recent_attacks[["timestamp", "source_ip", "dest_ip", "anomaly_score"]], use_container_width=True)
     else:
         st.info("No predictions available in the selected time range.")
-
