@@ -1,30 +1,10 @@
+# main_dashboard.py
+
 import streamlit as st
 from tabs import overview, live_stream, manual_entry, metrics, historical
-import pandas as pd
 
 # --- Configuration based on Dashboard Type ---
-DASHBOARD_TYPE = st.secrets.get("DASHBOARD_TYPE", "DNS")
-
-if DASHBOARD_TYPE == "DNS":
-    API_URL = st.secrets.get("API_URL")
-    DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK")
-    INFLUXDB_URL = st.secrets.get("INFLUXDB_URL")
-    INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET")
-    INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN")
-    SQLITE_HOST = st.secrets.get("SQLITE_HOST")
-    SQLITE_PORT = st.secrets.get("SQLITE_PORT")
-    SQLITE_DB = st.secrets.get("SQLITE_DB")
-    SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY")
-elif DASHBOARD_TYPE == "DOS":
-    API_URL = st.secrets.get("DOS_API_URL")
-    DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK")
-    INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL")
-    INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET")
-    INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN")
-    SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST")
-    SQLITE_PORT = st.secrets.get("DOS_SQLITE_PORT")
-    SQLITE_DB = st.secrets.get("DOS_SQLITE_DB")
-    SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY")
+DASHBOARD_TYPE = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Set default to DNS if not specified
 
 # --- Sidebar Settings ---
 time_range_query_map = {
@@ -50,16 +30,16 @@ if "attacks" not in st.session_state:
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
 with tabs[0]:
-    overview.render(time_range, time_range_query_map)
+    overview.render(time_range, time_range_query_map, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
 
 with tabs[1]:
-    live_stream.render(thresh, highlight_color, alerts_enabled)
+    live_stream.render(thresh, highlight_color, alerts_enabled, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
 
 with tabs[2]:
-    manual_entry.render()
+    manual_entry.render(DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
 
 with tabs[3]:
-    metrics.render(thresh)
+    metrics.render(thresh, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
 
 with tabs[4]:
-    historical.render(thresh, highlight_color)
+    historical.render(thresh, highlight_color, DASHBOARD_TYPE)  # Pass DASHBOARD_TYPE here
