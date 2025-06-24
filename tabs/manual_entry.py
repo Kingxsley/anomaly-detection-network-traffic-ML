@@ -2,19 +2,18 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime
-from tabs.utils import API_URL
 
+# Get the API_URL dynamically based on the dashboard type
+dashboard_type = st.secrets.get("DASHBOARD_TYPE", "DNS")  # Default to DNS if not set
+
+# Set the appropriate API URL based on the dashboard type
+if dashboard_type == "DNS":
+    API_URL = st.secrets.get("API_URL", "")
+else:
+    API_URL = st.secrets.get("DOS_API_URL", "")
 
 def render():
-    st.header(f"Manual Entry for {st.secrets.get('DASHBOARD_TYPE', 'DNS')}")
-
-    # Load the appropriate API URL and webhook for DNS/DOS based on selected dashboard
-    if st.secrets.get("DASHBOARD_TYPE", "DNS") == "DNS":
-        api_url = st.secrets.get("API_URL")
-        discord_webhook = st.secrets.get("DISCORD_WEBHOOK")
-    else:  # DOS Dashboard
-        api_url = st.secrets.get("DOS_API_URL")
-        discord_webhook = st.secrets.get("DOS_DISCORD_WEBHOOK")
+    st.header(f"Manual Entry for {dashboard_type}")
 
     # Input fields for the inter-arrival time and DNS rate
     col1, col2 = st.columns(2)
@@ -26,7 +25,7 @@ def render():
     # Predict button logic
     if st.button("Predict"):
         try:
-            res = requests.post(api_url, json={
+            res = requests.post(API_URL, json={
                 "inter_arrival_time": inter_arrival_time,
                 "dns_rate": dns_rate
             })
@@ -38,7 +37,7 @@ def render():
 
             # Send Discord alert if the result is an anomaly
             if result["anomaly"] == 1:
-                send_discord_alert(result, discord_webhook)
+                send_discord_alert(result)
 
         except Exception as e:
             st.error(f"Error: {e}")
