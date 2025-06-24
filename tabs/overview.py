@@ -1,6 +1,6 @@
 import streamlit as st
 import pandas as pd
-from ..utils import load_predictions_from_sqlitecloud
+from utils import load_predictions_from_sqlitecloud
 
 
 def render(time_range, time_range_query_map):
