@@ -157,8 +157,8 @@ def get_historical(start, end):
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
             |> range(start: {start_str}, stop: {end_str})
-            |> filter(fn: (r) => r._measurement == "dos")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
+            |> filter(fn: (r) => r._measurement == "dos")  # Ensure we're querying DoS data
+            |> filter(fn: (r) => r._field == "dos_rate" or r._field == "inter_arrival_time")  # Ensure correct fields
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
