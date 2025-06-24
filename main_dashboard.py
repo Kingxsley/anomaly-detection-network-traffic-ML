@@ -1,47 +1,65 @@
 import streamlit as st
 from tabs import overview, live_stream, manual_entry, metrics, historical
+import pandas as pd
 
-# Sidebar for selecting the dashboard type (DNS or DOS)
-dashboard_type = st.sidebar.radio("Select Dashboard Type", ["DNS", "DOS"], index=0)
+# --- Configuration based on Dashboard Type ---
+DASHBOARD_TYPE = st.secrets.get("DASHBOARD_TYPE", "DNS")
 
-# Store the selected dashboard type in session state
-if "DASHBOARD_TYPE" not in st.session_state:
-    st.session_state.DASHBOARD_TYPE = "DNS"  # Default to DNS
+if DASHBOARD_TYPE == "DNS":
+    API_URL = st.secrets.get("API_URL")
+    DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK")
+    INFLUXDB_URL = st.secrets.get("INFLUXDB_URL")
+    INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET")
+    INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN")
+    SQLITE_HOST = st.secrets.get("SQLITE_HOST")
+    SQLITE_PORT = st.secrets.get("SQLITE_PORT")
+    SQLITE_DB = st.secrets.get("SQLITE_DB")
+    SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY")
+elif DASHBOARD_TYPE == "DOS":
+    API_URL = st.secrets.get("DOS_API_URL")
+    DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK")
+    INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL")
+    INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET")
+    INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN")
+    SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST")
+    SQLITE_PORT = st.secrets.get("DOS_SQLITE_PORT")
+    SQLITE_DB = st.secrets.get("DOS_SQLITE_DB")
+    SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY")
 
-# Update the session state when the dashboard type is toggled
-st.session_state.DASHBOARD_TYPE = dashboard_type
+# --- Sidebar Settings ---
+time_range_query_map = {
+    "Last 30 min": "-30m",
+    "Last 1 hour": "-1h",
+    "Last 24 hours": "-24h",
+    "Last 7 days": "-7d",
+    "Last 14 days": "-14d",
+    "Last 30 days": "-30d"
+}
+time_range = st.sidebar.selectbox("Time Range", list(time_range_query_map.keys()), index=2)
+thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
+highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
+alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
-# Sidebar for settings and configurations (keep the original sidebar structure)
-st.sidebar.header("Settings")
+# --- State Initialization ---
+if "predictions" not in st.session_state:
+    st.session_state.predictions = []
+if "attacks" not in st.session_state:
+    st.session_state.attacks = []
 
-# Time Range Selection
-time_range = st.sidebar.selectbox("Select Time Range", ["-24h", "-48h", "-7d", "-30d"], index=0)
+# --- Tabs Navigation ---
+tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
-# Toggle for enabling/disabling alerts
-alerts_enabled = st.sidebar.checkbox("Enable Alerts", value=True)
+with tabs[0]:
+    overview.render(time_range, time_range_query_map)
 
-# Add any additional settings (e.g., threshold, highlight color, etc.)
-threshold = st.sidebar.slider("Anomaly Detection Threshold", 0.0, 1.0, 0.5, 0.01)
-highlight_color = st.sidebar.color_picker("Highlight Color", value="#FFFF00")
+with tabs[1]:
+    live_stream.render(thresh, highlight_color, alerts_enabled)
 
-# Display the selected dashboard in the main content area
-if st.session_state.DASHBOARD_TYPE == "DNS":
-    st.title("DNS Anomaly Detection Dashboard")
-else:
-    st.title("DOS Anomaly Detection Dashboard")
-
-# Add tabs for each section (Overview, Live Stream, Manual Entry, Metrics, Historical)
-tabs = ["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical"]
-selected_tab = st.sidebar.selectbox("Select a Tab", tabs)
-
-# Render the selected tab content based on dashboard type
-if selected_tab == "Overview":
-    overview.render(time_range, {"-24h": "-24h", "-48h": "-48h", "-7d": "-7d", "-30d": "-30d"})
-elif selected_tab == "Live Stream":
-    live_stream.render(thresh=threshold, highlight_color=highlight_color, alerts_enabled=alerts_enabled)
-elif selected_tab == "Manual Entry":
+with tabs[2]:
     manual_entry.render()
-elif selected_tab == "Metrics":
-    metrics.render(thresh=threshold)
-elif selected_tab == "Historical":
-    historical.render(thresh=threshold, highlight_color=highlight_color)
+
+with tabs[3]:
+    metrics.render(thresh)
+
+with tabs[4]:
+    historical.render(thresh, highlight_color)
