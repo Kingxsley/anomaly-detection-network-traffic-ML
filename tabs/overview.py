@@ -27,9 +27,9 @@ def render(time_range, time_range_query_map):
 
         st.markdown("### Attack Summary")
         summary_cols = st.columns(3)
-        summary_cols[0].metric("Average Error", f"{avg_error:.4f}")
-        summary_cols[1].metric("Max Error", f"{max_error:.4f}")
-        summary_cols[2].metric("Min Error", f"{min_error:.4f}")
+        summary_cols[0].metric("Average Reconstruction Error", f"{avg_error:.4f}")
+        summary_cols[1].metric("Max Reconstruction Error", f"{max_error:.4f}")
+        summary_cols[2].metric("Min Reconstruction Error", f"{min_error:.4f}")
 
         st.markdown("### Top Source IPs")
         ip_counts = df["source_ip"].value_counts().nlargest(10).reset_index()
