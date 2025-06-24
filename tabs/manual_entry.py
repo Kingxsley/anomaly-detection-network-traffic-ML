@@ -1,8 +1,9 @@
+# manual_entry.py
+
 import streamlit as st
 import requests
 from datetime import datetime
-from tabs.utils import API_URL
-
+from tabs.utils import DASHBOARD_TYPE  # Import DASHBOARD_TYPE here
 
 def render():
     st.header("Manual Entry")
@@ -13,7 +14,7 @@ def render():
         dns_rate = st.number_input("DNS Rate", value=5.0)
 
     # Use the appropriate API URL based on DASHBOARD_TYPE
-    API_URL = st.secrets.get("API_URL" if DASHBOARD_TYPE == "DNS" else "DOS_API_URL")
+    API_URL = st.secrets.get(f"{'DOS' if DASHBOARD_TYPE == 'DOS' else 'API'}_URL")
 
     if st.button("Predict"):
         try:
