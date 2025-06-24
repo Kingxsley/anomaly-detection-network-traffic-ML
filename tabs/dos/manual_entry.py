@@ -3,7 +3,7 @@ import streamlit as st
 import pandas as pd
 import requests
 from datetime import datetime
-from tabs.dos.utils import API_URL
+from tabs.dos.utils import DOS_API_URL
 
 def render_manual_entry(api_url):
     st.header("Manual Entry - DOS Anomaly Check")
