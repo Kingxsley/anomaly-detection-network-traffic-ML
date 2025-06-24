@@ -12,7 +12,7 @@ def render(thresh, highlight_color, alerts_enabled):
 
     # Use the correct API URL for DoS
     API_URL = DOS_API_URL
-    records = get_data(API_URL)  # Fetch DoS data from the correct API
+    records = get_data()  # Fetch DoS data from the correct API
 
     new_predictions = []
     if records:
