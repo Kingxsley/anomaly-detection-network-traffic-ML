@@ -1,14 +1,15 @@
 import streamlit as st
-import pandas as pd
+from streamlit_autorefresh import st_autorefresh  # Import missing function
 from tabs.dos.utils import load_predictions_from_sqlitecloud
 
 def render_overview(api_url, influx_measurement, time_range, time_range_query_map):
-    st_autorefresh(interval=30000, key="overview_refresh")
+    st_autorefresh(interval=30000, key="overview_refresh")  # Refresh every 30 seconds
     st.title("DOS Anomaly Detection Overview")
-    query_duration = time_range_query_map.get(time_range, "-24h")  # Ensure this is a dictionary and time_range is a valid key
-
-    df = load_predictions_from_sqlitecloud(time_window=query_duration)
-
+    
+    # Adjusting the query duration based on the selected time range
+    query_duration = time_range_query_map.get(time_range, "-24h")
+    df = load_predictions_from_sqlitecloud(time_window=query_duration)  # Pass the adjusted query duration
+    
     if not df.empty:
         total_predictions = len(df)
         attack_rate = df["is_anomaly"].mean()
