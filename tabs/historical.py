@@ -2,7 +2,7 @@
 
 import streamlit as st
 import pandas as pd
-from tabs.utils import get_historical  # Import the correct get_historical for DoS
+from tabs.utils import get_historical  # Get DoS historical data
 
 def render(thresh, highlight_color):
     st.header("DoS Historical Data")  # Update header for DoS
