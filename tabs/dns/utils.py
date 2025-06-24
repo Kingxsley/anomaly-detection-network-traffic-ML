@@ -11,7 +11,7 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- DNS Secrets ---
+# --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
 DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "")
 INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
@@ -140,7 +140,7 @@ def get_dns_data():
         st.warning(f"Failed to fetch live DNS data from InfluxDB: {e}")
         return []
 
-# --- Get Historical Data ---
+# --- Get Historical DNS Data ---
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
@@ -196,3 +196,4 @@ def display_summary_cards(summary):
         for _, row in summary["top_ips"].iterrows():
             st.write(f"{row['source_ip']}: {row['count']}")
 
+get_dns_historical_data = get_historical
