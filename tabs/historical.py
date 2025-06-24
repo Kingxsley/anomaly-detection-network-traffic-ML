@@ -77,4 +77,12 @@ def render(thresh, highlight_color):
                     chart = px.area(df, x="timestamp", y="packet_rate", color="label",
                                     color_discrete_map={"Normal": "blue", "Attack": "red"})
                 elif chart_type == "Scatter":
-                    chart = px.scatter(df, x="timestamp", y="packet_rate", color="label_
+                    chart = px.scatter(df, x="timestamp", y="packet_rate", color="label",
+                                       color_discrete_map={"Normal": "blue", "Attack": "red"})
+            else:
+                st.warning("Required columns for DOS are missing.")
+
+        st.plotly_chart(chart, use_container_width=True)
+        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_data.csv")
+    else:
+        st.warning("No historical data found.")
