@@ -1,10 +1,12 @@
 import streamlit as st
+import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
+from influxdb_client import InfluxDBClient
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "")
@@ -18,7 +20,11 @@ SQLITECLOUD_URL = st.secrets.get("SQLITECLOUD_URL", "")
 # --- SQLiteCloud Loader ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
-        import sqlitecloud
+        import sqlite3
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(SQLITECLOUD_URL)
+        db_path = f"/mnt/data/{parsed_url.path.lstrip('/')}"
 
         if "h" in time_window:
             delta = timedelta(hours=int(time_window.strip("-h")))
@@ -31,7 +37,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         query = f"""
             SELECT * FROM anomalies
@@ -53,8 +59,13 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 # --- SQLiteCloud Logger ---
 def log_to_sqlitecloud(record):
     try:
-        import sqlitecloud
-        conn = sqlitecloud.connect(SQLITECLOUD_URL)
+        import sqlite3
+        from urllib.parse import urlparse
+
+        parsed_url = urlparse(SQLITECLOUD_URL)
+        db_path = f"/mnt/data/{parsed_url.path.lstrip('/')}"
+
+        conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
@@ -83,81 +94,55 @@ def log_to_sqlitecloud(record):
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
-# --- Overview Tab ---
-def render(time_range, time_range_query_map):
-    st_autorefresh(interval=30000, key="overview_refresh")
-    st.title("DNS Anomaly Detection Overview")
-    query_duration = time_range_query_map.get(time_range, "-24h")
-    df = load_predictions_from_sqlitecloud(time_window=query_duration)
+# --- Get Real-time DNS Data ---
+def get_dns_data():
+    try:
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}")
+            |> range(start: -5m)
+            |> filter(fn: (r) => r._measurement == "dns")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dns_rate")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    rows.append({
+                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "dns_rate": record.values.get("dns_rate", 0.0),
+                        "source_ip": record.values.get("source_ip", "unknown"),
+                        "dest_ip": record.values.get("dest_ip", "unknown")
+                    })
+            return rows
+    except Exception as e:
+        st.warning(f"Failed to fetch live DNS data from InfluxDB: {e}")
+        return []
 
-    if not df.empty:
-        total_predictions = len(df)
-        attack_rate = df["is_anomaly"].mean()
-        recent_cutoff = pd.Timestamp.now().replace(tzinfo=None) - pd.Timedelta(hours=1)
-        recent_attacks_df = df[(df["timestamp"] >= recent_cutoff) & (df["is_anomaly"] == 1)]
-
-        # 📊 Key Metrics
-        st.subheader("Key Metrics")
-        col1, col2, col3 = st.columns(3)
-        col1.metric("Total Predictions", total_predictions)
-        col2.metric("Attack Rate", f"{attack_rate:.2%}")
-        col3.metric("Recent Attacks (Last Hour)", len(recent_attacks_df))
-
-        # 📊 Model Performance
-        if "anomaly_score" in df.columns:
-            df["predicted"] = (df["anomaly_score"] >= 0.5).astype(int)
-            precision = precision_score(df["is_anomaly"], df["predicted"], zero_division=0)
-            recall = recall_score(df["is_anomaly"], df["predicted"], zero_division=0)
-            f1 = f1_score(df["is_anomaly"], df["predicted"], zero_division=0)
-
-            st.subheader("Model Evaluation")
-            eval_col1, eval_col2, eval_col3 = st.columns(3)
-            eval_col1.metric("Precision", f"{precision:.2%}")
-            eval_col2.metric("Recall", f"{recall:.2%}")
-            eval_col3.metric("F1 Score", f"{f1:.2%}")
-
-        # 🧐 Attack Summary
-        st.subheader("Attack Insights")
-        if len(df[df["is_anomaly"] == 1]) > 0:
-            attack_df = df[df["is_anomaly"] == 1].copy()
-            avg_score = attack_df["anomaly_score"].mean()
-            max_score = attack_df["anomaly_score"].max()
-            top_sources = attack_df["source_ip"].value_counts().reset_index()
-            top_sources.columns = ["Source IP", "Anomaly Count"]
-            peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
-
-            ai_col1, ai_col2, ai_col3 = st.columns(3)
-            ai_col1.metric("Avg. Reconstruction Error", f"{avg_score:.4f}")
-            ai_col2.metric("Max. Reconstruction Error", f"{max_score:.4f}")
-            ai_col3.metric("Peak Attack Hour", f"{peak_hour}:00")
-
-            st.markdown("### Top Source IPs by Anomaly Count")
-            top_sources_sorted = top_sources.sort_values(by="Anomaly Count", ascending=False)
-            fig = px.bar(
-                top_sources_sorted.head(10),
-                x="Source IP",
-                y="Anomaly Count",
-                labels={"Anomaly Count": "Count"},
-                height=350
-            )
-            fig.update_layout(
-                xaxis_tickangle=-45,
-                margin=dict(t=40, b=20),
-            )
-            st.plotly_chart(fig, use_container_width=True)
-        else:
-            st.info("No attacks recorded in the selected time window.")
-
-        # 📉 Anomaly Trend Line
-        st.subheader("Anomaly Score Over Time")
-        fig = px.line(
-            df,
-            x="timestamp",
-            y="anomaly_score",
-            color=df["is_anomaly"].map({1: "Attack", 0: "Normal"}).astype(str),
-            labels={"color": "Anomaly Type"},
-            title=""
-        )
-        st.plotly_chart(fig, use_container_width=True)
-    else:
-        st.info("No predictions available in the selected time range.")
+# --- Get Historical Data ---
+@st.cache_data(ttl=600)
+def get_historical(start, end):
+    try:
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}")
+            |> range(start: {start.isoformat()}, stop: {end.isoformat()})
+            |> filter(fn: (r) => r._measurement == "dns")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dns_rate")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    d = record.values.copy()
+                    d["timestamp"] = record.get_time()
+                    rows.append(d)
+            return pd.DataFrame(rows)
+    except Exception as e:
+        st.error(f"Error retrieving historical data: {e}")
+        return pd.DataFrame()
