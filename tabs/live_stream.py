@@ -1,14 +1,16 @@
+# live_stream.py
+
 import streamlit as st
 import requests
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_data, send_discord_alert, log_to_sqlitecloud
+from tabs.utils import DETAILED_URL, DASHBOARD_TYPE  # Import DASHBOARD_TYPE from utils.py
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live Stream")
 
     # Use the appropriate API URL based on DASHBOARD_TYPE
-    API_URL = st.secrets.get("API_URL" if DASHBOARD_TYPE == "DNS" else "DOS_API_URL")
+    API_URL = st.secrets.get(f"{'DOS' if DASHBOARD_TYPE == 'DOS' else 'API'}_URL")
     records = get_data(API_URL)
 
     new_predictions = []
