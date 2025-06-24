@@ -1,13 +1,12 @@
-import requests
 import sqlite3
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timedelta
 import streamlit as st
 
 # --- API URL ---
 API_URL = st.secrets.get("API_URL", "")
 
-# Function to get DNS data from InfluxDB (replace this with your actual implementation)
+# Function to get DNS data (replace this with your actual DNS data retrieval logic)
 def get_dns_data():
     # Placeholder function to simulate DNS data fetching
     return [
@@ -64,3 +63,38 @@ def log_to_sqlitecloud(record):
         conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
+
+# --- Function to Load Predictions from SQLite Cloud ---
+def load_predictions_from_sqlitecloud(time_window="-24h"):
+    try:
+        if "h" in time_window:
+            delta = timedelta(hours=int(time_window.strip("-h")))
+        elif "d" in time_window:
+            delta = timedelta(days=int(time_window.strip("-d")))
+        elif "m" in time_window:
+            delta = timedelta(minutes=int(time_window.strip("-m")))
+        else:
+            delta = timedelta(hours=24)
+
+        cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
+
+        # Connecting to SQLite Cloud database
+        conn = sqlite3.connect(f"sqlitecloud://{st.secrets['SQLITE_HOST']}:{st.secrets['SQLITE_PORT']}/{st.secrets['SQLITE_DB']}?apikey={st.secrets['SQLITE_APIKEY']}")
+        cursor = conn.execute(f"""
+            SELECT * FROM anomalies
+            WHERE timestamp >= '{cutoff}'
+            ORDER BY timestamp DESC
+        """)
+        rows = cursor.fetchall()
+        if not rows:
+            return pd.DataFrame()
+
+        cols = [column[0] for column in cursor.description]
+        df = pd.DataFrame(rows, columns=cols)
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
+
+        conn.close()
+        return df.dropna(subset=["timestamp"])
+    except Exception as e:
+        st.error(f"SQLite Cloud error: {e}")
+        return pd.DataFrame()
