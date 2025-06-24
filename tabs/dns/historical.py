@@ -1,11 +1,9 @@
-# tabs/dns/historical.py
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.dns.utils import get_historical
-
+from tabs.dns.utils import get_historical  # Import the correct function
 
 def render(thresh, highlight_color):
     st.header("Historical DNS Data")
@@ -16,9 +14,11 @@ def render(thresh, highlight_color):
     with col2:
         end_date = st.date_input("End Date", datetime.now())
 
-    df = get_historical_from_influx(start_date, end_date)
+    # Use the correct function to get historical data
+    df = get_historical(start_date, end_date)  # Update here
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.sort_values("timestamp")
         df["reconstruction_error"] = np.random.default_rng().random(len(df))
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
@@ -32,8 +32,8 @@ def render(thresh, highlight_color):
         chart_type = st.selectbox("Chart Type", ["Line", "Bar", "Pie", "Area", "Scatter"], index=0)
 
         rows_per_page = 100
-        total_pages = (len(df) - 1) // rows_per_page + 1
-        page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
+        total_pages = max((len(df) - 1) // rows_per_page + 1, 1)
+        page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_dos_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
         def highlight_hist(row):
@@ -42,21 +42,21 @@ def render(thresh, highlight_color):
         st.dataframe(df_view.style.apply(highlight_hist, axis=1))
 
         if chart_type == "Line":
-            chart = px.line(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.line(df, x="timestamp", y="byte_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Bar":
-            chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.bar(df, x="timestamp", y="byte_rate", color="label",
                            color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Pie":
             chart = px.pie(df, names="label")
         elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.area(df, x="timestamp", y="byte_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.scatter(df, x="timestamp", y="byte_rate", color="label",
                                color_discrete_map={"Normal": "blue", "Attack": "red"})
 
         st.plotly_chart(chart, use_container_width=True)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dns_data.csv")
+        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dos_data.csv")
     else:
         st.warning("No historical data found.")
