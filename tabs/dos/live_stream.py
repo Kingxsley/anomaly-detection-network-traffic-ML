@@ -9,6 +9,27 @@ def render_live_stream(api_url, influx_measurement, db_path):
     st_autorefresh(interval=10000, key="dos_live_refresh")
     st.header("Live DOS Stream")
 
+    # Fallback to secrets API_URL if not provided
+    api_url = api_url or API_URL
+
+    # Validate parameters
+    if not influx_measurement:
+        st.warning("Missing InfluxDB measurement name.")
+    if not db_path:
+        st.warning("Missing database path for SQLite Cloud.")
+
+    # Ensure session state is initialized
+    if "predictions" not in st.session_state:
+        st.session_state.predictions = []
+    if "attacks" not in st.session_state:
+        st.session_state.attacks = []
+
+    # Option to reset session state
+    if st.button("Reset Stream"):
+        st.session_state.predictions.clear()
+        st.session_state.attacks.clear()
+        st.success("Live stream session reset.")
+
     records = get_dos_data(influx_measurement)
     new_predictions = []
 
