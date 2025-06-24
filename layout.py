@@ -17,6 +17,22 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
     st.set_page_config(page_title=title, layout="wide")
     st.title(title)
 
+    # Shared sidebar filters
+    time_range_query_map = {
+        "Last 30 min": "-30m",
+        "Last 1 hour": "-1h",
+        "Last 24 hours": "-24h",
+        "Last 7 days": "-7d",
+        "Last 14 days": "-14d",
+        "Last 30 days": "-30d"
+    }
+    time_range = st.sidebar.selectbox("Time Range", list(time_range_query_map.keys()), index=2)
+    query_duration = time_range_query_map[time_range]
+
+    thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
+    highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
+    alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
+
     tab1, tab2, tab3, tab4, tab5 = st.tabs([
         "Overview",
         "Live Stream",
@@ -27,15 +43,15 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
 
     if mode == "dns":
         with tab1:
-            render_dns_overview(api_url, influx_measurement)
+            render_dns_overview(api_url, influx_measurement, query_duration)
         with tab2:
-            render_dns_live_stream(thresh=0.15, highlight_color="#FFB6C1", alerts_enabled=True)
+            render_dns_live_stream(thresh, highlight_color, alerts_enabled)
         with tab3:
             render_dns_manual_entry()
         with tab4:
-            render_dns_metrics()
+            render_dns_metrics(thresh)
         with tab5:
-            render_dns_historical(thresh=0.15)
+            render_dns_historical(thresh, highlight_color)
 
     elif mode == "dos":
         with tab1:
