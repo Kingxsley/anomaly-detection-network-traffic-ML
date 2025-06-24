@@ -6,6 +6,7 @@ import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.dos.utils import get_dos_historical_data
 
+
 def render(thresh, highlight_color):
     st.header("Historical DOS Data")
 
@@ -18,6 +19,7 @@ def render(thresh, highlight_color):
     df = get_dos_historical_data(start_date, end_date)
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df = df.sort_values("timestamp")
         df["reconstruction_error"] = np.random.default_rng().random(len(df))
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
@@ -31,7 +33,7 @@ def render(thresh, highlight_color):
         chart_type = st.selectbox("Chart Type", ["Line", "Bar", "Pie", "Area", "Scatter"], index=0)
 
         rows_per_page = 100
-        total_pages = (len(df) - 1) // rows_per_page + 1
+        total_pages = max((len(df) - 1) // rows_per_page + 1, 1)
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_dos_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
