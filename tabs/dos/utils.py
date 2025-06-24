@@ -119,7 +119,7 @@ def get_dos_data():
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
             |> range(start: -5m)
             |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "byte_rate")
+            |> filter(fn: (r) => r._field == "byte_rate")  # Ensure you're querying for byte_rate here
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
@@ -129,7 +129,7 @@ def get_dos_data():
                 for record in table.records:
                     rows.append({
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "byte_rate": record.values.get("byte_rate", 0.0),
+                        "byte_rate": record.values.get("byte_rate", 0.0),  # Ensure byte_rate is in the data
                         "source_ip": record.values.get("source_ip", "unknown"),
                         "dest_ip": record.values.get("dest_ip", "unknown")
                     })
@@ -137,6 +137,7 @@ def get_dos_data():
     except Exception as e:
         st.warning(f"Failed to fetch live DOS data from InfluxDB: {e}")
         return []
+
 
 # --- Get Historical DOS Data ---
 @st.cache_data(ttl=600)
