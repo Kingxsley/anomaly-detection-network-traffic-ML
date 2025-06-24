@@ -78,11 +78,16 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger ---
-def log_to_sqlitecloud(record):
+def log_to_sqlitecloud(record, db_path="dns"):
     try:
-        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
+        conn = sqlitecloud.connect(
+            f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{db_path}?apikey={SQLITE_APIKEY}",
+            uri=True,
+            check_hostname=False,  # add this only if using IP (not recommended)
+            server_hostname=SQLITE_HOST  # REQUIRED for SSL with hostname
+        )
         conn.execute("""
-            CREATE TABLE IF NOT EXISTS anomalies (
+            CREATE TABLE IF NOT EXISTS dns_anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 timestamp TEXT,
                 source_ip TEXT,
@@ -93,10 +98,10 @@ def log_to_sqlitecloud(record):
             );
         """)
         conn.execute("""
-            INSERT INTO anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
+            INSERT INTO dns_anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
+            record.get("timestamp"),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
             "DNS",
@@ -104,11 +109,10 @@ def log_to_sqlitecloud(record):
             int(record.get("anomaly", 0))
         ))
         conn.commit()
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=AttributeError)
-            conn.close()
+        conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
+
 
 # --- Get Real-time DNS Data ---
 def get_dns_data():
