@@ -42,7 +42,7 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
 
     if mode == "dns":
         with tab1:
-            render_dns_overview(api_url, influx_measurement, time_range, time_range_query_map)
+            render_dns_overview(api_url, influx_measurement, time_range, time_range_query_map)  # Pass time_range_query_map
         with tab2:
             render_dns_live_stream(thresh, highlight_color, alerts_enabled)
         with tab3:
@@ -54,7 +54,7 @@ def render_dashboard(title, api_url, influx_measurement, db_path, mode):
 
     elif mode == "dos":
         with tab1:
-            render_dos_overview(api_url, influx_measurement, time_range, time_range_query_map)
+            render_dos_overview(api_url, influx_measurement)
         with tab2:
             render_dos_live_stream(api_url, influx_measurement, db_path)
         with tab3:
