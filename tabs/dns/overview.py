@@ -2,7 +2,8 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import load_predictions_from_sqlitecloud
+from tabs.dns.utils import load_predictions_from_sqlitecloud
+
 
 
 def render(time_range, time_range_query_map):
