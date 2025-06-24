@@ -41,34 +41,40 @@ def render(thresh, highlight_color):
 
         st.dataframe(df_view.style.apply(highlight_hist, axis=1))
 
-        # Plotting the selected chart type
-        if chart_type == "Line":
-            # Ensure 'dns_rate' exists or use another valid column
-            if 'dns_rate' in df.columns:
-                chart = px.line(df, x="timestamp", y="dns_rate", color="label",
-                                color_discrete_map={"Normal": "blue", "Attack": "red"})
+        # Plotting the selected chart type based on available columns
+        if st.secrets.get('DASHBOARD_TYPE', 'DNS') == 'DNS':
+            # DNS: Use dns_rate and inter_arrival_time
+            if 'dns_rate' in df.columns and 'inter_arrival_time' in df.columns:
+                if chart_type == "Line":
+                    chart = px.line(df, x="timestamp", y="dns_rate", color="label",
+                                    color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Bar":
+                    chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
+                                   color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Pie":
+                    chart = px.pie(df, names="label")
+                elif chart_type == "Area":
+                    chart = px.area(df, x="timestamp", y="dns_rate", color="label",
+                                    color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Scatter":
+                    chart = px.scatter(df, x="timestamp", y="dns_rate", color="label",
+                                       color_discrete_map={"Normal": "blue", "Attack": "red"})
             else:
-                st.warning("'dns_rate' column is not available, plotting 'reconstruction_error' instead.")
-                chart = px.line(df, x="timestamp", y="reconstruction_error", color="label",
-                                color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Bar":
-            # Check if 'dns_rate' exists or fall back to 'reconstruction_error'
-            if 'dns_rate' in df.columns:
-                chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
-                               color_discrete_map={"Normal": "blue", "Attack": "red"})
-            else:
-                chart = px.bar(df, x="timestamp", y="reconstruction_error", color="label",
-                               color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Pie":
-            chart = px.pie(df, names="label")
-        elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="reconstruction_error", color="label",
-                            color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="reconstruction_error", color="label",
-                               color_discrete_map={"Normal": "blue", "Attack": "red"})
+                st.warning("Required columns for DNS are missing.")
 
-        st.plotly_chart(chart, use_container_width=True)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_data.csv")
-    else:
-        st.warning("No historical data found.")
+        else:
+            # DOS: Use packet_rate and inter_arrival_time
+            if 'packet_rate' in df.columns and 'inter_arrival_time' in df.columns:
+                if chart_type == "Line":
+                    chart = px.line(df, x="timestamp", y="packet_rate", color="label",
+                                    color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Bar":
+                    chart = px.bar(df, x="timestamp", y="packet_rate", color="label",
+                                   color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Pie":
+                    chart = px.pie(df, names="label")
+                elif chart_type == "Area":
+                    chart = px.area(df, x="timestamp", y="packet_rate", color="label",
+                                    color_discrete_map={"Normal": "blue", "Attack": "red"})
+                elif chart_type == "Scatter":
+                    chart = px.scatter(df, x="timestamp", y="packet_rate", color="label_
