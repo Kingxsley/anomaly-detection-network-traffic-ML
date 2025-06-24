@@ -5,9 +5,13 @@ from streamlit_autorefresh import st_autorefresh
 from tabs.utils import load_predictions_from_sqlitecloud  # Updated import
 from tabs.utils import DASHBOARD_TYPE
 
-def render(time_range, time_range_query_map):
-    st_autorefresh(interval=30000, key="overview_refresh")
-    st.title("Anomaly Detection Overview")
+# overview.py
+
+def render(time_range, time_range_query_map, dashboard_type):
+    # Now you can use dashboard_type here to change the behavior accordingly
+    st.title(f"{dashboard_type} Overview")
+    # Your other code here...
+
 
     query_duration = time_range_query_map.get(time_range, "-24h")
     df = load_predictions_from_sqlitecloud(time_window=query_duration)
