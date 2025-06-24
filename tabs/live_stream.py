@@ -2,16 +2,15 @@
 
 import streamlit as st
 import requests
-import pandas as pd  # <-- Add this import statement
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_data, DASHBOARD_TYPE  # Import get_data here
+from tabs.utils import get_data  # Assuming get_data is defined in utils.py
 
-def render(thresh, highlight_color, alerts_enabled):
+def render(thresh, highlight_color, alerts_enabled, dashboard_type):
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live Stream")
 
-    # Use the appropriate API URL based on DASHBOARD_TYPE
-    API_URL = st.secrets.get(f"{'DOS' if DASHBOARD_TYPE == 'DOS' else 'API'}_URL")
+    # Use the appropriate API URL based on dashboard_type
+    API_URL = st.secrets.get(f"{'DOS' if dashboard_type == 'DOS' else 'API'}_URL")
     records = get_data(API_URL)
 
     new_predictions = []
