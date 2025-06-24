@@ -1,20 +1,11 @@
-# tabs/dos/historical.py
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.dos.utils import get_dos_historical_data
 
-
-def render(thresh, highlight_color):
+def render_historical(start_date, end_date, thresh, highlight_color):
     st.header("Historical DOS Data")
-
-    col1, col2 = st.columns(2)
-    with col1:
-        start_date = st.date_input("Start Date", datetime.now() - timedelta(days=7))
-    with col2:
-        end_date = st.date_input("End Date", datetime.now())
 
     df = get_dos_historical_data(start_date, end_date)
     if not df.empty:
