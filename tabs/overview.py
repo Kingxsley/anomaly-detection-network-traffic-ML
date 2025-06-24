@@ -15,30 +15,31 @@ def render(time_range, time_range_query_map):
     if not df.empty:
         total_predictions = len(df)
         attack_rate = df["is_anomaly"].mean()
-
-        # 🆕 Filter recent attacks from loaded SQLite data
         recent_cutoff = pd.Timestamp.now().replace(tzinfo=None) - pd.Timedelta(hours=1)
         recent_attacks_df = df[(df["timestamp"] >= recent_cutoff) & (df["is_anomaly"] == 1)]
 
+        # 📊 Key Metrics
+        st.subheader("Key Metrics")
         col1, col2, col3 = st.columns(3)
         col1.metric("Total Predictions", total_predictions)
         col2.metric("Attack Rate", f"{attack_rate:.2%}")
-        col3.metric("Recent Attacks", len(recent_attacks_df))
+        col3.metric("Recent Attacks (Last Hour)", len(recent_attacks_df))
 
-        # 🔍 Evaluation metrics
+        # 🔍 Model Performance
         if "anomaly_score" in df.columns:
             df["predicted"] = (df["anomaly_score"] >= 0.5).astype(int)
             precision = precision_score(df["is_anomaly"], df["predicted"], zero_division=0)
             recall = recall_score(df["is_anomaly"], df["predicted"], zero_division=0)
             f1 = f1_score(df["is_anomaly"], df["predicted"], zero_division=0)
 
-            st.subheader("Model Performance")
-            st.write(f"**Precision**: {precision:.2%}")
-            st.write(f"**Recall**: {recall:.2%}")
-            st.write(f"**F1 Score**: {f1:.2%}")
+            st.subheader("Model Evaluation")
+            eval_col1, eval_col2, eval_col3 = st.columns(3)
+            eval_col1.metric("Precision", f"{precision:.2%}")
+            eval_col2.metric("Recall", f"{recall:.2%}")
+            eval_col3.metric("F1 Score", f"{f1:.2%}")
 
-        # 🔍 Attack Summary Stats
-        st.subheader("Attack Summary")
+        # 🧠 Attack Summary
+        st.subheader("Attack Insights")
         if len(df[df["is_anomaly"] == 1]) > 0:
             attack_df = df[df["is_anomaly"] == 1].copy()
             avg_score = attack_df["anomaly_score"].mean()
@@ -46,22 +47,24 @@ def render(time_range, time_range_query_map):
             top_sources = attack_df["source_ip"].value_counts().head(3)
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
-            st.write(f"**Avg. Reconstruction Error (Attacks)**: {avg_score:.4f}")
-            st.write(f"**Max. Reconstruction Error (Attacks)**: {max_score:.4f}")
-            st.write("**Top Source IPs:**")
+            st.markdown(f"- **Avg. Reconstruction Error**: {avg_score:.4f}")
+            st.markdown(f"- **Max. Reconstruction Error**: {max_score:.4f}")
+            st.markdown("- **Top Source IPs:**")
             for ip, count in top_sources.items():
-                st.write(f"- {ip}: {count} occurrences")
-            st.write(f"**Most Frequent Attack Hour:** {peak_hour}:00")
+                st.markdown(f"  - `{ip}`: {count} anomalies")
+            st.markdown(f"- **Most Active Hour for Attacks**: {peak_hour}:00")
         else:
             st.info("No attacks recorded in the selected time window.")
 
+        # 📉 Anomaly Trend Line
+        st.subheader("Anomaly Score Over Time")
         fig = px.line(
             df,
             x="timestamp",
             y="anomaly_score",
             color=df["is_anomaly"].map({1: "Attack", 0: "Normal"}).astype(str),
             labels={"color": "Anomaly Type"},
-            title="Anomaly Score Over Time"
+            title=""
         )
         st.plotly_chart(fig, use_container_width=True)
     else:
