@@ -1,4 +1,3 @@
-# tabs/dos/utils.py
 import streamlit as st
 import os
 import pandas as pd
@@ -13,18 +12,16 @@ import sqlitecloud
 import warnings
 
 # --- DOS Secrets ---
-# --- DOS Secrets ---
-API_URL = st.secrets.get("DOS_API_URL", "")
-DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
-INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
-INFLUXDB_ORG = st.secrets.get("DOS_INFLUXDB_ORG", "")
-INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET", "")
-INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN", "")
-SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
-SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
-SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
-SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
-
+DOS_API_URL = st.secrets.get("DOS_API_URL", "")
+DOS_DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
+DOS_INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
+DOS_INFLUXDB_ORG = st.secrets.get("DOS_INFLUXDB_ORG", "")
+DOS_INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET", "")
+DOS_INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN", "")
+DOS_SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
+DOS_SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
+DOS_SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
+DOS_SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
 
 # --- Discord Alert ---
 def send_discord_alert(result):
@@ -39,7 +36,7 @@ def send_discord_alert(result):
         )
     }
     try:
-        requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
+        requests.post(DOS_DISCORD_WEBHOOK, json=message, timeout=20)
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
@@ -57,7 +54,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
+        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
         cursor = conn.execute(f"""
             SELECT * FROM dos_anomalies
             WHERE timestamp >= '{cutoff}'
@@ -80,14 +77,9 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger ---
-def log_to_sqlitecloud(record, db_path="dos"):
+def log_to_sqlitecloud(record):
     try:
-        conn = sqlitecloud.connect(
-            f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{db_path}?apikey={SQLITE_APIKEY}",
-            uri=True,
-            check_hostname=False,
-            server_hostname=SQLITE_HOST
-        )
+        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS dos_anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -103,7 +95,7 @@ def log_to_sqlitecloud(record, db_path="dos"):
             INSERT INTO dos_anomalies (timestamp, source_ip, dest_ip, protocol, anomaly_score, is_anomaly)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (
-            record.get("timestamp"),
+            record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
             "DOS",
@@ -111,18 +103,20 @@ def log_to_sqlitecloud(record, db_path="dos"):
             int(record.get("anomaly", 0))
         ))
         conn.commit()
-        conn.close()
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore", category=AttributeError)
+            conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
 # --- Get Real-time DOS Data ---
 def get_dos_data():
     try:
-        if not INFLUXDB_URL:
+        if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
-        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+        with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
-            from(bucket: "{INFLUXDB_BUCKET}")
+            from(bucket: "{DOS_INFLUXDB_BUCKET}")
             |> range(start: -5m)
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "byte_rate")
@@ -148,11 +142,11 @@ def get_dos_data():
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
-        if not INFLUXDB_URL:
+        if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
-        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+        with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
-            from(bucket: "{INFLUXDB_BUCKET}")
+            from(bucket: "{DOS_INFLUXDB_BUCKET}")
             |> range(start: {start.isoformat()}, stop: {end.isoformat()})
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "byte_rate")
