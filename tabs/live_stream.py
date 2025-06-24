@@ -4,13 +4,13 @@ import streamlit as st
 import requests
 import pandas as pd
 from streamlit_autorefresh import st_autorefresh
-from tabs.utils import get_data, DASHBOARD_TYPE  # Use DoS-specific functions from utils
+from tabs.utils import get_data, DASHBOARD_TYPE  # Use DoS-specific functions from utils.py
 
 def render(thresh, highlight_color, alerts_enabled, dashboard_type):
     st_autorefresh(interval=10000, key="live_refresh")
-    st.header("Live DOS Stream")  # Set header for DoS
+    st.header(f"Live {dashboard_type} Stream")  # Dynamic header
 
-    # Use the appropriate API URL for DoS
+    # Use the correct API URL for DoS
     API_URL = st.secrets.get(f"{'DOS' if dashboard_type == 'DOS' else 'API'}_URL")
     records = get_data(API_URL)
 
@@ -18,8 +18,8 @@ def render(thresh, highlight_color, alerts_enabled, dashboard_type):
     if records:
         for row in records:
             payload = {
-                "inter_arrival_time": row["inter_arrival_time"],
-                "dns_rate": row["dns_rate"]
+                "inter_arrival_time": row["inter_arrival_time"],  # Use DoS-specific field
+                "dos_rate": row["dos_rate"]  # Correct DoS rate field
             }
             try:
                 response = requests.post(API_URL, json=payload, timeout=20)
