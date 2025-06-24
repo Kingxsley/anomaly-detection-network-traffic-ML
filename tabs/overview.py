@@ -47,12 +47,13 @@ def render(time_range, time_range_query_map):
             top_sources = attack_df["source_ip"].value_counts().head(3)
             peak_hour = attack_df["timestamp"].dt.hour.mode()[0]
 
-            st.markdown(f"- **Avg. Reconstruction Error**: {avg_score:.4f}")
-            st.markdown(f"- **Max. Reconstruction Error**: {max_score:.4f}")
-            st.markdown("- **Top Source IPs:**")
-            for ip, count in top_sources.items():
-                st.markdown(f"  - `{ip}`: {count} anomalies")
-            st.markdown(f"- **Most Active Hour for Attacks**: {peak_hour}:00")
+            with st.expander("📌 Attack Summary Details", expanded=True):
+                st.markdown(f"**Average Reconstruction Error:** `{avg_score:.4f}`")
+                st.markdown(f"**Maximum Reconstruction Error:** `{max_score:.4f}`")
+                st.markdown("**Top Source IPs with Most Anomalies:**")
+                for ip, count in top_sources.items():
+                    st.markdown(f"- **{ip}**: {count} anomalies")
+                st.markdown(f"**Peak Hour of Attack Activity:** {peak_hour}:00")
         else:
             st.info("No attacks recorded in the selected time window.")
 
