@@ -199,3 +199,5 @@ def display_summary_cards(summary):
         st.markdown("**Top Source IPs**")
         for _, row in summary["top_ips"].iterrows():
             st.write(f"{row['source_ip']}: {row['count']}")
+
+get_historical_from_influx = get_historical
