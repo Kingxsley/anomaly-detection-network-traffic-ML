@@ -6,7 +6,7 @@ from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
 
-st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")
+st.set_page_config(page_title="DOS Anomaly Detection Dashboard", layout="wide")
 
 # --- Sidebar Settings ---
 time_range_query_map = {
@@ -36,7 +36,7 @@ if "attacks" not in st.session_state:
 # --- Redirect Toggle to DNS Dashboard ---
 toggle_redirect = st.sidebar.radio(
     "Switch Dashboard",
-    ("Stay on DoS Dashboard", "Go to DNS Dashboard")
+    ("Stay on DOS Dashboard", "Go to DNS Dashboard")
 )
 
 # Check if the user wants to redirect to DNS
