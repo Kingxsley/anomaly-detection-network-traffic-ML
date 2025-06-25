@@ -120,7 +120,7 @@ def get_dos_data():
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -10s)  # Adjust time range for real-time updates
+            |> range(start: -10s)  # Fetch last 10 seconds of data
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -155,6 +155,7 @@ def get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
+
 
 
 # --- Get Historical Data ---
