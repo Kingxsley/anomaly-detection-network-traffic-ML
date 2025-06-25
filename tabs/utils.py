@@ -180,9 +180,6 @@ def get_historical(start, end):
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-
-        # Debugging output: Check the query being sent
-        print(f"Query being sent to InfluxDB: {query}")
         
         # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
