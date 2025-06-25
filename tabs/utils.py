@@ -115,7 +115,7 @@ def get_dos_data():
     try:
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: -1m)  # Fetch the last 1 minute of data
+        |> range(start: -1h)  # Fetch the last 1 minute of data
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
