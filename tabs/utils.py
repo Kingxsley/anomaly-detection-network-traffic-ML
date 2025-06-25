@@ -1,15 +1,11 @@
 import streamlit as st
-import os
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
-from datetime import datetime, timedelta
-from sklearn.metrics import precision_score, recall_score, f1_score
-from streamlit_autorefresh import st_autorefresh
-from influxdb_client import InfluxDBClient
 import requests
+from datetime import datetime, timedelta
+from influxdb_client import InfluxDBClient
 import sqlitecloud
 import warnings
+import time
 
 # --- Secrets ---
 API_URL = st.secrets.get("API_URL", "https://huggingface.co/spaces/mizzony/DoS_Anomaly_Detection")  # Updated for DoS
@@ -38,7 +34,7 @@ def send_discord_alert(result):
     }
     try:
         response = requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
-        print(f"API Response: {response.text}")  # Log the full API response
+        print(f"Discord Response: {response.text}")
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
@@ -79,6 +75,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
 
+
 # --- SQLiteCloud Logger ---
 def log_to_sqlitecloud(record):
     try:
@@ -112,14 +109,25 @@ def log_to_sqlitecloud(record):
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
+
 # --- Get Real-time DoS Data ---
-def get_dos_data():
+def get_dos_data(max_retries=3, retry_delay=10):
+    """
+    Fetch DoS data from InfluxDB with retry mechanism and timeout.
+    
+    Parameters:
+    - max_retries: Maximum number of retries before giving up.
+    - retry_delay: Delay between retries (in seconds).
+    
+    Returns:
+    - rows: List of query results from InfluxDB.
+    """
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Force UTC time by using datetime.utcnow()
-        current_time = datetime.utcnow()  # Get current UTC time
+        # Get current UTC time (as per InfluxDB's expectation)
+        current_time = datetime.utcnow()
 
         # Set the time range (e.g., 5 minutes ago to now)
         start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
@@ -129,7 +137,6 @@ def get_dos_data():
         start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
         end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
 
-        # Construct the InfluxDB query
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: {start_str}, stop: {end_str})  # Correct UTC time range
@@ -143,33 +150,46 @@ def get_dos_data():
         
         # Debugging output: Ensure the query is properly formatted
         print(f"Query being sent to InfluxDB: {query}")
-        
-        # Execute the query and retrieve data from InfluxDB
-        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
-            tables = client.query_api().query(query)
-            rows = []
-            for table in tables:
-                for record in table.records:
-                    rows.append({
-                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "packet_length": record.values.get("packet_length", 0.0),
-                        "packet_rate": record.values.get("packet_rate", 0.0),
-                        "source_port": record.values.get("source_port", "unknown"),
-                        "dest_port": record.values.get("dest_port", "unknown")
-                    })
 
-            return rows
+        # Initialize retry attempts
+        attempts = 0
+        rows = []
 
-    except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
-        return []
+        while attempts < max_retries:
+            try:
+                with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+                    tables = client.query_api().query(query)
+                    for table in tables:
+                        for record in table.records:
+                            rows.append({
+                                "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                                "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                                "packet_length": record.values.get("packet_length", 0.0),
+                                "packet_rate": record.values.get("packet_rate", 0.0),
+                                "source_port": record.values.get("source_port", "unknown"),
+                                "dest_port": record.values.get("dest_port", "unknown")
+                            })
+
+                if rows:  # If data is successfully fetched, break the loop
+                    break
+
+            except Exception as e:
+                # Retry mechanism if the query fails
+                attempts += 1
+                st.warning(f"Attempt {attempts}/{max_retries} failed: {e}")
+                if attempts < max_retries:
+                    time.sleep(retry_delay)  # Delay before retry
+
+        if attempts == max_retries:
+            st.error(f"Failed to fetch data after {max_retries} attempts.")
+
+        return rows
+
     except Exception as e:
-        # Catch other errors and display a warning
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        st.warning(f"Error fetching DoS data: {e}")
         return []
 
-# --- Get Historical Data ---
+# --- Historical Data ---
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
@@ -180,7 +200,6 @@ def get_historical(start, end):
         start_str = start.strftime('%Y-%m-%dT%H:%M:%SZ')  # Format as '2025-06-18T00:00:00Z'
         end_str = end.strftime('%Y-%m-%dT%H:%M:%SZ')      # Format as '2025-06-25T23:59:59Z'
 
-        # Construct the query without comments or stray characters
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: {start_str}, stop: {end_str})
@@ -191,11 +210,10 @@ def get_historical(start, end):
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-
+        
         # Debugging output: Check the query being sent
         print(f"Query being sent to InfluxDB: {query}")
-        
-        # Execute the query and retrieve data
+
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
