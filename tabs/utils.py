@@ -1,6 +1,5 @@
-# utils.py
-
 import streamlit as st
+import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -12,19 +11,19 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- DoS Settings (Hardcoded) ---
-DOS_API_URL = "https://kingxsley-dos-api.hf.space/predict"
-DOS_DISCORD_WEBHOOK = "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7"
-DOS_INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-DOS_INFLUXDB_ORG = "Anormally Detection"
-DOS_INFLUXDB_BUCKET = "realtime"
-DOS_INFLUXDB_TOKEN = "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg=="
-DOS_SQLITE_HOST = "cfolwawehk.g2.sqlite.cloud"
-DOS_SQLITE_PORT = 8860
-DOS_SQLITE_DB = "dos"
-DOS_SQLITE_APIKEY = "77cz3yvotfOw3EgNIM9xPLAWaajazSyxcnCWvvbxFEA"
+# --- Secrets ---
+DOS_API_URL = st.secrets.get("DOS_API_URL", "")
+DOS_DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
+DOS_INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
+DOS_INFLUXDB_ORG = st.secrets.get("DOS_INFLUXDB_ORG", "")
+DOS_INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET", "")
+DOS_INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN", "")
+DOS_SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
+DOS_SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
+DOS_SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
+DOS_SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
 
-# --- Discord Alert ---
+# --- Discord Alert for DoS ---
 def send_discord_alert(result):
     message = {
         "content": (
@@ -42,7 +41,7 @@ def send_discord_alert(result):
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
-# --- SQLiteCloud Loader ---
+# --- SQLiteCloud Loader for DoS ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
         if "h" in time_window:
@@ -78,7 +77,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
 
-# --- SQLiteCloud Logger ---
+# --- SQLiteCloud Logger for DoS ---
 def log_to_sqlitecloud(record):
     try:
         conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
@@ -100,7 +99,7 @@ def log_to_sqlitecloud(record):
             record.get("timestamp", datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")),
             record.get("source_ip", "N/A"),
             record.get("dest_ip", "N/A"),
-            "DoS",  # Hardcoded for DoS
+            "DoS",
             float(record.get("reconstruction_error", 0)),
             int(record.get("anomaly", 0))
         ))
@@ -116,7 +115,6 @@ def get_dos_data():
     try:
         if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
-        
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
@@ -133,7 +131,7 @@ def get_dos_data():
                     rows.append({
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
                         "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "dos_rate": record.values.get("dos_rate", 0.0),  # Correct field for DoS rate
+                        "dos_rate": record.values.get("dos_rate", 0.0),
                         "source_ip": record.values.get("source_ip", "unknown"),
                         "dest_ip": record.values.get("dest_ip", "unknown")
                     })
@@ -148,17 +146,12 @@ def get_historical(start, end):
     try:
         if not DOS_INFLUXDB_URL:
             raise ValueError("No host specified.")
-        
-        # Ensure start and end are in the correct string format
-        start_str = start.isoformat()
-        end_str = end.isoformat()
-
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
-            |> range(start: {start_str}, stop: {end_str})
-            |> filter(fn: (r) => r._measurement == "dos")  # Ensure we're querying DoS data
-            |> filter(fn: (r) => r._field == "dos_rate" or r._field == "inter_arrival_time")  # Ensure correct fields
+            |> range(start: {start.isoformat()}, stop: {end.isoformat()})
+            |> filter(fn: (r) => r._measurement == "dos")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
