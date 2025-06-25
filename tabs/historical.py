@@ -18,11 +18,14 @@ def render(thresh, highlight_color):
     # Fetch historical data based on the date range
     df = get_historical(start_date, end_date)
     
+    # Debugging: check if any data is returned
+    st.write(f"Data fetched: {df.head()}")  # Show first few rows of the fetched data
+
     if not df.empty:
-        # Ensure the timestamp is in the same format as the DNS version
+        # Ensure the timestamp is in the correct format
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
-        # Calculate reconstruction error and anomaly flags
+        # Calculate reconstruction error and anomaly flags (use actual anomaly detection here)
         df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Placeholder for demo
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
