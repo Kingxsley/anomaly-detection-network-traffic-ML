@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime, timedelta
+from datetime import datetime
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
@@ -121,7 +121,7 @@ def get_dos_data():
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -1m)  # Fetch the last 1 minute of data
+            |> range(start: -1m)  # Last 1 minute of data
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                                 or r._field == "packet_rate" or r._field == "source_port"
@@ -135,6 +135,10 @@ def get_dos_data():
             
             # Execute the query and retrieve data
             tables = client.query_api().query(query)
+            if not tables:
+                st.warning("No data returned from InfluxDB within the specified range.")
+                return []
+
             rows = []
             for table in tables:
                 for record in table.records:
@@ -148,14 +152,11 @@ def get_dos_data():
                     })
             
             return rows
-    except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
-        return []
-    except Exception as e:
-        # Catch other errors and display a warning
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
-        return []
 
+    except Exception as e:
+        # Catch any other errors and display a warning
+        st.error(f"Error retrieving live DoS data from InfluxDB: {e}")
+        return []
 
 
 # --- Get Historical Data ---
