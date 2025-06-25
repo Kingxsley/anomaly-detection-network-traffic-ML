@@ -116,11 +116,11 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Fetch live data from the last 10 seconds, you can adjust this range
+        # Fetch live data from the last 10 seconds (or adjust based on your requirements)
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -10s)  # Fetch last 10 seconds of data
+            |> range(start: -10s)  # Fetch the last 10 seconds of data
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
