@@ -5,7 +5,6 @@ from tabs import live_stream
 from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
-import streamlit.components.v1 as components
 
 st.set_page_config(page_title="Unified Anomaly Detection Dashboard", layout="wide")
 
@@ -57,5 +56,5 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Embed DoS dashboard using iframe
-    components.iframe("https://anomaly-detection-network-traffic-ml-dos.streamlit.app", height=800)
+    # Add a link to open DoS app in a new tab
+    st.sidebar.markdown("[Go to DoS Dashboard](https://anomaly-detection-network-traffic-ml-dos.streamlit.app)", unsafe_allow_html=True)
