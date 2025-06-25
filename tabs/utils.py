@@ -11,7 +11,7 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- Secrets ---
+# --- DoS Settings (Hardcoded) ---
 DOS_API_URL = st.secrets.get("DOS_API_URL", "")
 DOS_DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
 DOS_INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
@@ -22,6 +22,9 @@ DOS_SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
 DOS_SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
 DOS_SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
 DOS_SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
+
+# --- Debugging the InfluxDB URL ---
+st.write("DoS InfluxDB URL:", DOS_INFLUXDB_URL)  # Debugging line
 
 # --- Discord Alert for DoS ---
 def send_discord_alert(result):
@@ -144,12 +147,17 @@ def get_dos_data():
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
-        if not DOS_INFLUXDB_URL:
+        if not DOS_INFLUXDB_URL:  # Check if the URL is missing
             raise ValueError("No host specified.")
+        
+        # Ensure start and end are in the correct string format
+        start_str = start.isoformat()
+        end_str = end.isoformat()
+
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
-            |> range(start: {start.isoformat()}, stop: {end.isoformat()})
+            |> range(start: {start_str}, stop: {end_str})
             |> filter(fn: (r) => r._measurement == "dos")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
