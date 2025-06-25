@@ -115,7 +115,7 @@ def get_dos_data():
     try:
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: -1h)  # Fetch the last 1 minute of data
+        |> range(start: -1m)  # Fetch data for the last minute
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -125,7 +125,81 @@ def get_dos_data():
         '''
     ```
 
-Try these updates and let me know if the DoS stream starts working correctly!
+#### **4. Data Availability and API Response**
+Even with a longer query range, if **InfluxDB** does not have any data for the time range specified or if the **API response** is not structured as expected (i.e., it does not include `"anomaly"` or `"reconstruction_error"`), the DoS stream will not work.
+
+- **Fix**: Log the response from the prediction API (`response.json()`) to ensure that the expected data is being returned. You can add the following line inside your API request:
+
+    ```python
+    response = requests.post(API_URL, json=payload, timeout=20)
+    result = response.json()
+    print(f"API Response: {result}")  # Debug the response
+    ```
+
+#### **5. Verify InfluxDB Configuration**
+Check if your **InfluxDB connection** parameters (`INFLUXDB_URL`, `INFLUXDB_TOKEN`, `INFLUXDB_BUCKET`, etc.) are correct and accessible. If any of these values are incorrect, the query will fail.
+
+- **Fix**: Verify all connection details in the `st.secrets` and make sure they are correct.
+
+#### **6. Query Execution Error Handling**
+If the **query fails to execute**, you should be able to capture the error using `st.warning` or `st.error`. However, if the **InfluxDB client** is not catching these errors properly, the issue may not be visible.
+
+- **Fix**: Add more comprehensive error handling in the `get_dos_data()` function.
+
+### **Fixing the Code Based on the Above Analysis**
+
+1. **Increase Time Range**: Fetch data over a longer period, e.g., `range(start: -1m)` for 1 minute.
+2. **Verify Fields**: Use InfluxDB Data Explorer to verify that the fields (`packet_rate`, `inter_arrival_time`, etc.) exist in your `network_traffic` measurement.
+3. **API Response**: Debug and log the response from the API to check the results returned from the anomaly detection model.
+4. **Check Connection**: Double-check the connection credentials in `st.secrets` to ensure the URL, token, and bucket are correct.
+
+### **Updated `get_dos_data()` Code**:
+
+```python
+def get_dos_data():
+    try:
+        if not INFLUXDB_URL:
+            raise ValueError("No host specified.")
+        
+        # Fetch live data from the last minute (adjust as necessary)
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}")
+            |> range(start: -1m)  # Last minute of data
+            |> filter(fn: (r) => r._measurement == "network_traffic")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
+                                or r._field == "packet_rate" or r._field == "source_port"
+                                or r._field == "dest_port")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            
+            # Debugging output: Print query to check its correctness
+            print(f"Query being sent to InfluxDB: {query}")
+            
+            # Execute the query and retrieve data
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    rows.append({
+                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "packet_length": record.values.get("packet_length", 0.0),
+                        "packet_rate": record.values.get("packet_rate", 0.0),
+                        "source_port": record.values.get("source_port", "unknown"),
+                        "dest_port": record.values.get("dest_port", "unknown")
+                    })
+            
+            # Return the fetched data
+            return rows
+    except ValueError as ve:
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
+        return []
+    except Exception as e:
+        # Catch other errors and display a warning
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        return []
 
 
 
