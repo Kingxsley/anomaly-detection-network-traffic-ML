@@ -7,6 +7,7 @@ from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
+from datetime import datetime, timedelta
 import requests
 import sqlitecloud
 import warnings
@@ -116,10 +117,15 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No InfluxDB URL specified.")
 
-        # Ensure the query is syntactically correct for Flux
+        # Ensure that the date is correctly formatted to match Flux expectations
+        now = datetime.utcnow()  # Use UTC time
+        start_time = (now - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')  # 5 minutes ago
+        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')  # Current time
+        
+        # Construct the Flux query with start and end times in the correct format
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: -5m)  // Query data from the last 5 minutes
+        |> range(start: {start_time}, stop: {end_time})  // Correct time range
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or 
                              r._field == "packet_length" or 
@@ -128,11 +134,11 @@ def get_dos_data():
                              r._field == "dest_port")
         |> sort(columns: ["_time"], desc: false)
         '''
-        
+
         # Log the query for debugging purposes
         print(f"Executing query: {query}")
         
-        # Execute the query
+        # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
@@ -156,8 +162,7 @@ def get_dos_data():
         st.error(f"Value Error: {ve}")
         return []
     except Exception as e:
-        # Provide detailed error message for easier debugging
-        st.warning(f"Error fetching live DoS data from InfluxDB: {e}")
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
 
 
