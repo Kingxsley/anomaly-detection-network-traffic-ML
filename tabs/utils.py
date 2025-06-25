@@ -82,9 +82,10 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger for DoS ---
+# utils.py
 def log_to_sqlitecloud(record):
     try:
-        # Correct connection string to SQLiteCloud with server_hostname
+        # Correct connection string with server_hostname
         sqlitecloud_url = f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}&server_hostname={DOS_SQLITE_HOST}"
 
         conn = sqlitecloud.connect(sqlitecloud_url)
@@ -116,35 +117,6 @@ def log_to_sqlitecloud(record):
             conn.close()
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
-# --- Get Real-time DoS Data ---
-def get_dos_data():
-    try:
-        if not DOS_INFLUXDB_URL:
-            raise ValueError("No host specified.")
-        with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
-            query = f'''
-            from(bucket: "{DOS_INFLUXDB_BUCKET}")
-            |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "dos")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
-            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-            |> sort(columns: ["_time"], desc: false)
-            '''
-            tables = client.query_api().query(query)
-            rows = []
-            for table in tables:
-                for record in table.records:
-                    rows.append({
-                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "dos_rate": record.values.get("dos_rate", 0.0),
-                        "source_ip": record.values.get("source_ip", "unknown"),
-                        "dest_ip": record.values.get("dest_ip", "unknown")
-                    })
-            return rows
-    except Exception as e:
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
-        return []
 
 # --- Get Historical DoS Data ---
 @st.cache_data(ttl=600)
