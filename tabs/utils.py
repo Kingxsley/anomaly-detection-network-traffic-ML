@@ -111,11 +111,12 @@ def log_to_sqlitecloud(record):
 
 
 # --- Get Real-time DoS Data ---
+# Function to fetch real-time DoS data from InfluxDB
 def get_dos_data():
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
-        
+
         # Get current UTC time (as per InfluxDB's expectation)
         current_time = datetime.utcnow()
 
@@ -129,7 +130,7 @@ def get_dos_data():
 
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str})  # Correct UTC time range
+        |> range(start: {start_str}, stop: {end_str})  # Use correct time range
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -138,7 +139,7 @@ def get_dos_data():
         |> sort(columns: ["_time"], desc: false)
         '''
         
-        # Debugging output: Ensure the query is properly formatted
+        # Ensure that there are no comments or invalid characters
         print(f"Query being sent to InfluxDB: {query}")
 
         # Execute the query and retrieve data from InfluxDB
