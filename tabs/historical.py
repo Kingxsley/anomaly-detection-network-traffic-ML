@@ -34,8 +34,8 @@ def render(thresh, highlight_color):
         col2.metric("Anomalies Detected", df["anomaly"].sum())
         col3.metric("Anomaly Rate", f"{df['anomaly'].mean():.2%}")
 
-        # Select chart type
-        chart_type = st.selectbox("Chart Type", ["Line", "Bar", "Pie", "Area", "Scatter"], index=0)
+        # Select chart type (default to Pie Chart)
+        chart_type = st.selectbox("Chart Type", ["Pie", "Line", "Bar", "Area", "Scatter"], index=0, key="chart_type")
 
         # Pagination setup: 100 rows per page
         rows_per_page = 100
@@ -47,14 +47,14 @@ def render(thresh, highlight_color):
         st.dataframe(df_view.style.applymap(lambda v: f'background-color: {highlight_color}' if v == "Attack" else '', subset=["label"]))
 
         # Plot based on selected chart type
-        if chart_type == "Line":
+        if chart_type == "Pie":
+            chart = px.pie(df, names="label", title="Distribution of Anomalies", hole=0.3)  # Pie chart with labels
+        elif chart_type == "Line":
             chart = px.line(df, x="timestamp", y="packet_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Bar":
             chart = px.bar(df, x="timestamp", y="packet_rate", color="label",
                            color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Pie":
-            chart = px.pie(df, names="label")
         elif chart_type == "Area":
             chart = px.area(df, x="timestamp", y="packet_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
@@ -62,7 +62,14 @@ def render(thresh, highlight_color):
             chart = px.scatter(df, x="timestamp", y="packet_rate", color="label",
                                color_discrete_map={"Normal": "blue", "Attack": "red"})
 
+        # Display chart
         st.plotly_chart(chart, use_container_width=True)
+
+        # Place the chart type selector below the chart
+        st.markdown("---")  # Adds a separator line
+        st.selectbox("Chart Type", ["Pie", "Line", "Bar", "Area", "Scatter"], index=0, key="chart_type")
+
+        # Download the data as CSV
         st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dos_data.csv")
     else:
         st.warning("No historical data found.")
