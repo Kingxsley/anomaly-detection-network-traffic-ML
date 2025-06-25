@@ -1,6 +1,6 @@
+# --- Historical Data Tab ---
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.utils import get_historical
@@ -18,14 +18,11 @@ def render(thresh, highlight_color):
     # Fetch historical data based on the date range
     df = get_historical(start_date, end_date)
     
-    # Debugging: check if any data is returned
-    st.write(f"Data fetched: {df.head()}")  # Show first few rows of the fetched data
-
     if not df.empty:
-        # Ensure the timestamp is in the correct format
+        # Ensure the timestamp is in the same format as the DNS version
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
-        # Calculate reconstruction error and anomaly flags (use actual anomaly detection here)
+        # Calculate reconstruction error and anomaly flags
         df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Placeholder for demo
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
@@ -46,8 +43,8 @@ def render(thresh, highlight_color):
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-        # Show all columns
-        st.dataframe(df_view)
+        # Show all columns in the table, apply highlight color
+        st.dataframe(df_view.style.applymap(lambda v: f'background-color: {highlight_color}' if v == "Attack" else '', subset=["label"]))
 
         # Plot based on selected chart type
         if chart_type == "Line":
