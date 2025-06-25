@@ -7,7 +7,6 @@ from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
-from datetime import datetime, timedelta
 import requests
 import sqlitecloud
 import warnings
@@ -115,56 +114,47 @@ def log_to_sqlitecloud(record):
 def get_dos_data():
     try:
         if not INFLUXDB_URL:
-            raise ValueError("No InfluxDB URL specified.")
-
-        # Ensure that the date is correctly formatted to match Flux expectations
-        now = datetime.utcnow()  # Use UTC time
-        start_time = (now - timedelta(minutes=5)).strftime('%Y-%m-%dT%H:%M:%SZ')  # 5 minutes ago
-        end_time = now.strftime('%Y-%m-%dT%H:%M:%SZ')  # Current time
+            raise ValueError("No host specified.")
         
-        # Construct the Flux query with start and end times in the correct format
-        query = f'''
-        from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_time}, stop: {end_time})  // Correct time range
-        |> filter(fn: (r) => r._measurement == "network_traffic")
-        |> filter(fn: (r) => r._field == "inter_arrival_time" or 
-                             r._field == "packet_length" or 
-                             r._field == "packet_rate" or 
-                             r._field == "source_port" or 
-                             r._field == "dest_port")
-        |> sort(columns: ["_time"], desc: false)
-        '''
-
-        # Log the query for debugging purposes
-        print(f"Executing query: {query}")
-        
-        # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{INFLUXDB_BUCKET}")
+            |> range(start: -5m)
+            |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement for DoS data
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
+                            or r._field == "packet_rate" or r._field == "source_port"
+                            or r._field == "dest_port")  # Fields specific to DoS data
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            
+            # Debugging output: Print query to check its correctness
+            print(f"Query being sent to InfluxDB: {query}")
+            
+            # Execute the query and retrieve data
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
                 for record in table.records:
-                    # Check if all values are available and assign them correctly
-                    row = {
+                    rows.append({
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": record.get_value("inter_arrival_time"),
-                        "packet_length": record.get_value("packet_length"),
-                        "packet_rate": record.get_value("packet_rate"),
-                        "source_port": record.get_value("source_port"),
-                        "dest_port": record.get_value("dest_port")
-                    }
-                    rows.append(row)
-        
-        # Return the fetched rows
-        return rows
-        
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "packet_length": record.values.get("packet_length", 0.0),
+                        "packet_rate": record.values.get("packet_rate", 0.0),
+                        "source_port": record.values.get("source_port", "unknown"),
+                        "dest_port": record.values.get("dest_port", "unknown")
+                    })
+            
+            # Return the fetched data
+            return rows
+            
     except ValueError as ve:
-        st.error(f"Value Error: {ve}")
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
         return []
     except Exception as e:
+        # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
-
 
 
 
@@ -175,10 +165,11 @@ def get_historical(start, end):
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        start_str = start.strftime('%Y-%m-%dT%H:%M:%SZ')  # Ensure start date is in ISO8601 format
-        end_str = end.strftime('%Y-%m-%dT%H:%M:%SZ')      # Ensure end date is in ISO8601 format
+        # Ensure start and end dates are in ISO8601 format for Flux queries
+        start_str = start.strftime('%Y-%m-%dT%H:%M:%SZ')  # Format as '2025-06-18T00:00:00Z'
+        end_str = end.strftime('%Y-%m-%dT%H:%M:%SZ')      # Format as '2025-06-25T23:59:59Z'
 
-        # Flux query without comments
+        # Construct the query without comments or stray characters
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: {start_str}, stop: {end_str})
@@ -190,6 +181,10 @@ def get_historical(start, end):
         |> sort(columns: ["_time"], desc: false)
         '''
 
+        # Debugging output: Check the query being sent
+        print(f"Query being sent to InfluxDB: {query}")
+        
+        # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
