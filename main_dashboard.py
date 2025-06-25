@@ -33,6 +33,37 @@ if "predictions" not in st.session_state:
 if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
+# --- Redirect to DNS Dashboard ---
+st.markdown(
+    """
+    <style>
+    .redirect-message {
+        padding: 20px;
+        background-color: #f0f0f5;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        font-size: 18px;
+        color: #333;
+        text-align: center;
+    }
+    .redirect-message a {
+        color: #0066cc;
+        font-weight: bold;
+        text-decoration: none;
+        font-size: 18px;
+    }
+    .redirect-message a:hover {
+        text-decoration: underline;
+    }
+    </style>
+    <div class="redirect-message">
+        <p>You are viewing the <b>DOS Anomaly Detection</b> Dashboard.</p>
+        <p><a href="https://anomaly-detection-network-traffic-ml-dns.streamlit.app/" target="_blank">Click here</a> to switch to the DNS Anomaly Detection Dashboard.</p>
+    </div>
+    """,
+    unsafe_allow_html=True
+)
+
 # --- Tabs Navigation ---
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
@@ -41,7 +72,6 @@ with tabs[0]:
     overview.render(time_range, time_range_query_map)
 
 with tabs[1]:
-    # Passing the highlight color to the live stream tab
     live_stream.render(thresh, highlight_color, alerts_enabled)
 
 with tabs[2]:
@@ -51,5 +81,4 @@ with tabs[3]:
     metrics.render(thresh)
 
 with tabs[4]:
-    # Passing the highlight color to the historical tab
     historical.render(thresh, highlight_color)
