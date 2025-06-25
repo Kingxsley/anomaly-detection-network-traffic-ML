@@ -120,10 +120,10 @@ def get_dos_data():
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
             |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement for DoS data
+            |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
-                            or r._field == "dest_port")  # Fields specific to DoS data
+                            or r._field == "dest_port")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
@@ -155,6 +155,7 @@ def get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
+
 
 
 
