@@ -46,9 +46,10 @@ def send_discord_alert(result):
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
-# SQLiteCloud Loader for DoS
+# --- SQLiteCloud Loader for DoS ---
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
+        # Determine the time window for fetching data
         if "h" in time_window:
             delta = timedelta(hours=int(time_window.strip("-h")))
         elif "d" in time_window:
@@ -60,10 +61,8 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        # Adding hostname parameter to fix check_hostname issue
-        connection_string = f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}"
-
-        conn = sqlitecloud.connect(connection_string, verify_hostname=True)  # `verify_hostname=True` or try False
+        # Connect to SQLite Cloud
+        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
         cursor = conn.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
@@ -72,6 +71,8 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         rows = cursor.fetchall()
         if not rows:
             return pd.DataFrame()
+        
+        # Convert data to DataFrame
         cols = [column[0] for column in cursor.description]
         df = pd.DataFrame(rows, columns=cols)
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
@@ -79,10 +80,10 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         conn.close()
 
         return df.dropna(subset=["timestamp"])
-    except Exception as e:
-        st.error(f"SQLite Cloud error: {e}")
-        return pd.DataFrame()
 
+    except Exception as e:
+        print(f"SQLite Cloud error: {e}")
+        return pd.DataFrame()
 # --- SQLiteCloud Logger for DoS ---
 def log_to_sqlitecloud(record):
     try:
