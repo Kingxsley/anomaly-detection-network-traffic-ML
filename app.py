@@ -56,7 +56,7 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Automatically redirect to DoS dashboard in a new tab
+    # Automatically redirect to the DoS Dashboard in a new tab
     st.markdown(
         """
         <script type="text/javascript">
