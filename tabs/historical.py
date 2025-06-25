@@ -41,11 +41,12 @@ def render(thresh, highlight_color):
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-        # Apply highlight color to the columns dynamically using map()
-        def highlight_attack_columns(row):
-            return [f'background-color: {highlight_color}' if row['label'] == "Attack" else '' for _ in row]
+        # Apply highlight color to rows dynamically using map()
+        def highlight_attack_rows(row):
+            color = f'background-color: {highlight_color}' if row['label'] == "Attack" else ''
+            return [color] * len(row)  # Apply the color to the entire row
 
-        st.dataframe(df_view.style.apply(highlight_attack_columns, axis=1))
+        st.dataframe(df_view.style.apply(highlight_attack_rows, axis=1))
 
         # Always display Pie Chart
         chart = px.pie(df, names="label", title="Distribution of Anomalies", hole=0.3)  # Pie chart with labels
