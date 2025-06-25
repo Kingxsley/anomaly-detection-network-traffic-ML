@@ -6,7 +6,7 @@ from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
 
-st.set_page_config(page_title="DOS Anomaly Detection Dashboard", layout="wide")
+st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")
 
 # --- Sidebar Settings ---
 time_range_query_map = {
@@ -19,7 +19,12 @@ time_range_query_map = {
 }
 time_range = st.sidebar.selectbox("Time Range", list(time_range_query_map.keys()), index=2)
 thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
-highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
+
+# Sidebar color picker for highlighting
+highlight_color = st.sidebar.selectbox(
+    "Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3
+)
+
 alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
 # --- State Initialization ---
@@ -31,10 +36,12 @@ if "attacks" not in st.session_state:
 # --- Tabs Navigation ---
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
+# Rendering tabs with the highlight_color passed to each tab
 with tabs[0]:
     overview.render(time_range, time_range_query_map)
 
 with tabs[1]:
+    # Passing the highlight color to the live stream tab
     live_stream.render(thresh, highlight_color, alerts_enabled)
 
 with tabs[2]:
@@ -44,4 +51,5 @@ with tabs[3]:
     metrics.render(thresh)
 
 with tabs[4]:
+    # Passing the highlight color to the historical tab
     historical.render(thresh, highlight_color)
