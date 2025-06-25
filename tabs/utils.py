@@ -178,3 +178,33 @@ def display_summary_cards(summary):
         st.markdown("**Top Source IPs**")
         for _, row in summary["top_ips"].iterrows():
             st.write(f"{row['source_ip']}: {row['count']}")
+
+def get_dos_data():
+    try:
+        if not DOS_INFLUXDB_URL:
+            raise ValueError("No host specified.")
+        
+        with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
+            query = f'''
+            from(bucket: "{DOS_INFLUXDB_BUCKET}")
+            |> range(start: -5m)
+            |> filter(fn: (r) => r._measurement == "dos")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
+            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+            |> sort(columns: ["_time"], desc: false)
+            '''
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    rows.append({
+                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "dos_rate": record.values.get("dos_rate", 0.0),
+                        "source_ip": record.values.get("source_ip", "unknown"),
+                        "dest_ip": record.values.get("dest_ip", "unknown")
+                    })
+            return rows
+    except Exception as e:
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        return []
