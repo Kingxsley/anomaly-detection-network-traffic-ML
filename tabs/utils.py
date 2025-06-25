@@ -175,6 +175,3 @@ def get_historical(start, end):
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
-
-
-
