@@ -121,20 +121,13 @@ def log_to_sqlitecloud(record):
         st.warning(f"SQLite Cloud insert failed: {e}")
 
 # --- Get Historical DoS Data ---
-@st.cache_data(ttl=600)
-def get_historical(start, end):
+# --- Get Real-time DoS Data (InfluxDB) ---
+def get_dos_data(start_date, end_date):
     try:
-        if not DOS_INFLUXDB_URL:  # Check if the URL is missing
-            raise ValueError("No host specified.")
-        
-        # Ensure start and end are in the correct string format
-        start_str = start.isoformat()
-        end_str = end.isoformat()
-
         with InfluxDBClient(url=DOS_INFLUXDB_URL, token=DOS_INFLUXDB_TOKEN, org=DOS_INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{DOS_INFLUXDB_BUCKET}")
-            |> range(start: {start_str}, stop: {end_str})
+            |> range(start: {start_date.isoformat()}, stop: {end_date.isoformat()})
             |> filter(fn: (r) => r._measurement == "dos")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dos_rate")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
@@ -144,14 +137,17 @@ def get_historical(start, end):
             rows = []
             for table in tables:
                 for record in table.records:
-                    d = record.values.copy()
-                    d["timestamp"] = record.get_time()
-                    rows.append(d)
+                    rows.append({
+                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "dos_rate": record.values.get("dos_rate", 0.0),
+                        "source_ip": record.values.get("source_ip", "unknown"),
+                        "dest_ip": record.values.get("dest_ip", "unknown")
+                    })
             return pd.DataFrame(rows)
     except Exception as e:
-        st.error(f"Error retrieving historical DoS data: {e}")
+        print(f"Error retrieving historical DoS data: {e}")
         return pd.DataFrame()
-
 # --- Summary Dashboard Helpers ---
 def generate_attack_summary(df):
     if df.empty:
