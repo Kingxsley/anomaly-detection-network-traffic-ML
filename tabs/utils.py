@@ -116,18 +116,25 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
+        # Ensure the InfluxDB client connection
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
-                            or r._field == "packet_rate" or r._field == "source_port"
-                            or r._field == "dest_port")
+            |> range(start: -5m)  # Adjust time range as needed
+            |> filter(fn: (r) => r._measurement == "network_traffic")  # Filtering by the correct measurement
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or 
+                                 r._field == "packet_length" or 
+                                 r._field == "packet_rate" or 
+                                 r._field == "source_port" or 
+                                 r._field == "dest_port")  # Fields specific to DoS data
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
             
+            # Debugging output: Print query to check its correctness
+            print(f"Query being sent to InfluxDB: {query}")
+            
+            # Execute the query and retrieve data
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
@@ -141,12 +148,14 @@ def get_dos_data():
                         "dest_port": record.values.get("dest_port", "unknown")
                     })
             
+            # Return the fetched data
             return rows
             
     except ValueError as ve:
-        st.error(f"Value Error: {ve}")
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
         return []
     except Exception as e:
+        # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
 
