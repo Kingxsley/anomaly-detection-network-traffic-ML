@@ -5,7 +5,6 @@ from tabs import live_stream
 from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
-import streamlit.components.v1 as components  # For embedding iframe
 
 st.set_page_config(page_title="Unified Anomaly Detection Dashboard", layout="wide")
 
@@ -26,7 +25,7 @@ alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 # --- Sidebar for Dashboard Toggle (DNS vs DoS) ---
 dashboard_type = st.sidebar.radio(
     "Select Dashboard",
-    ("DNS Anomaly Detection", "DoS Anomaly Detection"),
+    ("DNS Anomaly Detection", "DOS Anomaly Detection"),
     index=0  # Default to DNS Anomaly Detection
 )
 
@@ -56,29 +55,9 @@ if dashboard_type == "DNS Anomaly Detection":
     with tabs[4]:
         historical.render(thresh, highlight_color)
 
-elif dashboard_type == "DoS Anomaly Detection":
+elif dashboard_type == "DOS Anomaly Detection":
     # Render DoS Dashboard
     st.markdown("### DoS Anomaly Detection Dashboard")
 
-    # Add an iframe to display the DoS dashboard inside the app with responsiveness
-    st.markdown(
-        """
-        <style>
-        .iframe-container {
-            position: relative;
-            width: 100%;
-            padding-bottom: 56.25%; /* 16:9 aspect ratio */
-            height: 0;
-        }
-        .iframe-container iframe {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-        }
-        </style>
-        <div class="iframe-container">
-            <iframe src="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" frameborder="0"></iframe>
-        </div>
-        """,
-        unsafe_allow_html=True
-    )
+    # Link to open the DoS Dashboard in a new tab
+    st.markdown("[Click here to view the DoS Anomaly Detection Dashboard in a new tab](https://anomaly-detection-network-traffic-ml-dos.streamlit.app/)", unsafe_allow_html=True)
