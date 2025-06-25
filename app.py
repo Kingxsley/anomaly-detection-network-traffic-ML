@@ -56,7 +56,7 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Embed DoS dashboard in the same page
+    # Embed DoS dashboard in the same page via iframe
     st.markdown(
         """
         <style>
