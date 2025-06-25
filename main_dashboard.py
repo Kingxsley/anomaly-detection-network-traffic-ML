@@ -1,6 +1,6 @@
 import streamlit as st
-from dos_dashboard import render_live_stream, render_manual_entry, render_metrics, render_historical_data, render_overview
-from dns_dashboard import render_live_stream as dns_live_stream, render_manual_entry as dns_manual_entry, render_metrics as dns_metrics, render_historical_data as dns_historical_data, render_overview as dns_overview
+from dos_dashboard import render_overview, render_live_stream, render_manual_entry, render_metrics, render_historical_data
+from dns_dashboard import render_overview as dns_overview, render_live_stream as dns_live_stream, render_manual_entry as dns_manual_entry, render_metrics as dns_metrics, render_historical_data as dns_historical_data
 
 # --- Sidebar Settings ---
 dashboard_toggle = st.sidebar.selectbox("Select Dashboard", ["DNS Dashboard", "DoS Dashboard"])
