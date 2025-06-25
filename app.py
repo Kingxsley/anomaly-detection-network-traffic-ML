@@ -63,12 +63,14 @@ elif dashboard_type == "DoS Anomaly Detection":
         .iframe-container {
             position: relative;
             width: 100%;
-            height: 800px;
+            height: 100vh;
+            margin-top: 10px;
         }
         .iframe-container iframe {
             position: absolute;
             width: 100%;
             height: 100%;
+            border: none;
         }
         </style>
         <div class="iframe-container">
