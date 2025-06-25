@@ -151,24 +151,24 @@ def get_historical(start, end):
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Ensure the date is formatted as ISO8601
-        start_str = start.isoformat()  # Convert to ISO string
-        end_str = end.isoformat()      # Convert to ISO string
+        # Ensure the start and end dates are in ISO8601 format
+        start_str = start.isoformat()  # Convert to ISO string: YYYY-MM-DDTHH:MM:SS
+        end_str = end.isoformat()      # Convert to ISO string: YYYY-MM-DDTHH:MM:SS
 
         # Query for historical data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: {start_str}, stop: {end_str})  # Correct date format
+            |> range(start: {start_str}, stop: {end_str})  # Correct date format for InfluxDB
             |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length" 
                             or r._field == "packet_rate" or r._field == "source_port" 
-                            or r._field == "dest_port")
+                            or r._field == "dest_port")  # Relevant fields
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
-            print(f"Query: {query}")  # Debugging: Check the query being sent
-
+            print(f"Query: {query}")  # Debugging the query string
+            
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
@@ -176,8 +176,9 @@ def get_historical(start, end):
                     d = record.values.copy()
                     d["timestamp"] = record.get_time()
                     rows.append(d)
-            
-            st.write("Fetched data:", rows)  # Debugging the fetched data
+
+            # Debugging output to check data
+            st.write("Fetched data:", rows)
             return pd.DataFrame(rows)
 
     except Exception as e:
