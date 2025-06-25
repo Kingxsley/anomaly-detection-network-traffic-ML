@@ -111,17 +111,7 @@ def log_to_sqlitecloud(record):
 
 
 # --- Get Real-time DoS Data ---
-def get_dos_data(max_retries=3, retry_delay=10):
-    """
-    Fetch DoS data from InfluxDB with retry mechanism and timeout.
-    
-    Parameters:
-    - max_retries: Maximum number of retries before giving up.
-    - retry_delay: Delay between retries (in seconds).
-    
-    Returns:
-    - rows: List of query results from InfluxDB.
-    """
+def get_dos_data():
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
@@ -151,42 +141,29 @@ def get_dos_data(max_retries=3, retry_delay=10):
         # Debugging output: Ensure the query is properly formatted
         print(f"Query being sent to InfluxDB: {query}")
 
-        # Initialize retry attempts
-        attempts = 0
-        rows = []
+        # Execute the query and retrieve data from InfluxDB
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            tables = client.query_api().query(query)
+            rows = []
+            for table in tables:
+                for record in table.records:
+                    rows.append({
+                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
+                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
+                        "packet_length": record.values.get("packet_length", 0.0),
+                        "packet_rate": record.values.get("packet_rate", 0.0),
+                        "source_port": record.values.get("source_port", "unknown"),
+                        "dest_port": record.values.get("dest_port", "unknown")
+                    })
 
-        while attempts < max_retries:
-            try:
-                with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
-                    tables = client.query_api().query(query)
-                    for table in tables:
-                        for record in table.records:
-                            rows.append({
-                                "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                                "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                                "packet_length": record.values.get("packet_length", 0.0),
-                                "packet_rate": record.values.get("packet_rate", 0.0),
-                                "source_port": record.values.get("source_port", "unknown"),
-                                "dest_port": record.values.get("dest_port", "unknown")
-                            })
+            return rows
 
-                if rows:  # If data is successfully fetched, break the loop
-                    break
-
-            except Exception as e:
-                # Retry mechanism if the query fails
-                attempts += 1
-                st.warning(f"Attempt {attempts}/{max_retries} failed: {e}")
-                if attempts < max_retries:
-                    time.sleep(retry_delay)  # Delay before retry
-
-        if attempts == max_retries:
-            st.error(f"Failed to fetch data after {max_retries} attempts.")
-
-        return rows
-
+    except ValueError as ve:
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
+        return []
     except Exception as e:
-        st.warning(f"Error fetching DoS data: {e}")
+        # Catch other errors and display a warning
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
 
 # --- Historical Data ---
