@@ -1,4 +1,3 @@
-# --- main app.py ---
 import streamlit as st
 import pandas as pd  # ✅ Added missing import
 from tabs import overview
@@ -6,8 +5,9 @@ from tabs import live_stream
 from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
+import streamlit.components.v1 as components  # For embedding iframe
 
-st.set_page_config(page_title="DNS Anomaly Detection Dashboard", layout="wide")
+st.set_page_config(page_title="Unified Anomaly Detection Dashboard", layout="wide")
 
 # --- Sidebar Settings ---
 time_range_query_map = {
@@ -23,26 +23,62 @@ thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
 highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
 alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
+# --- Sidebar for Dashboard Toggle (DNS vs DoS) ---
+dashboard_type = st.sidebar.radio(
+    "Select Dashboard",
+    ("DNS Anomaly Detection", "DoS Anomaly Detection"),
+    index=0  # Default to DNS Anomaly Detection
+)
+
 # --- State Initialization ---
 if "predictions" not in st.session_state:
     st.session_state.predictions = []
 if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
-# --- Tabs Navigation ---
-tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
+# --- Render Selected Dashboard ---
+if dashboard_type == "DNS Anomaly Detection":
+    # Render DNS Dashboard
+    tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
-with tabs[0]:
-    overview.render(time_range, time_range_query_map)
+    with tabs[0]:
+        overview.render(time_range, time_range_query_map)
 
-with tabs[1]:
-    live_stream.render(thresh, highlight_color, alerts_enabled)
+    with tabs[1]:
+        live_stream.render(thresh, highlight_color, alerts_enabled)
 
-with tabs[2]:
-    manual_entry.render()
+    with tabs[2]:
+        manual_entry.render()
 
-with tabs[3]:
-    metrics.render(thresh)
+    with tabs[3]:
+        metrics.render(thresh)
 
-with tabs[4]:
-    historical.render(thresh, highlight_color)
+    with tabs[4]:
+        historical.render(thresh, highlight_color)
+
+elif dashboard_type == "DoS Anomaly Detection":
+    # Render DoS Dashboard
+    st.markdown("### DoS Anomaly Detection Dashboard")
+
+    # Add an iframe to display the DoS dashboard inside the app with responsiveness
+    st.markdown(
+        """
+        <style>
+        .iframe-container {
+            position: relative;
+            width: 100%;
+            padding-bottom: 56.25%; /* 16:9 aspect ratio */
+            height: 0;
+        }
+        .iframe-container iframe {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+        }
+        </style>
+        <div class="iframe-container">
+            <iframe src="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" frameborder="0"></iframe>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
