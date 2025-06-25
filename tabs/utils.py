@@ -115,21 +115,20 @@ def log_to_sqlitecloud(record):
 # --- Get Real-time DoS Data ---
 def get_dos_data():
     try:
+        # Ensure InfluxDB URL is provided
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
-        
-        # Get the current UTC time
+
+        # Get current UTC time for the range (current time and 5 minutes ago)
         current_time = datetime.utcnow()
+        start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
+        end_time = current_time  # Current time
 
-        # Define the time range for the query
-        start_time = (current_time - timedelta(minutes=1))  # 1 minute ago
-        end_time = current_time  # Now
+        # Format start and end times as ISO 8601 strings
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
+        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
 
-        # Convert to ISO8601 format for InfluxDB query
-        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-
-        # Construct the query with the dynamic time range
+        # Construct the InfluxDB query with the calculated time range
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: {start_str}, stop: {end_str})
@@ -140,10 +139,10 @@ def get_dos_data():
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-        
-        # Debugging output: Print the query to check its correctness
+
+        # Debugging: Print the query to ensure it's correct
         print(f"Query being sent to InfluxDB: {query}")
-        
+
         # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
@@ -158,7 +157,7 @@ def get_dos_data():
                         "source_port": record.values.get("source_port", "unknown"),
                         "dest_port": record.values.get("dest_port", "unknown")
                     })
-            
+
             return rows
 
     except ValueError as ve:
