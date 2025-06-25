@@ -22,6 +22,7 @@ DOS_SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
 DOS_SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
 DOS_SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
 DOS_SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
+st.write("DoS InfluxDB URL:", DOS_INFLUXDB_URL)  # Debugging line
 
 
 # --- Debugging the InfluxDB URL ---
@@ -45,7 +46,7 @@ def send_discord_alert(result):
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
-# --- SQLiteCloud Loader for DoS ---
+# SQLiteCloud Loader for DoS
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
         if "h" in time_window:
@@ -59,7 +60,10 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 
         cutoff = (datetime.utcnow() - delta).strftime("%Y-%m-%d %H:%M:%S")
 
-        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
+        # Adding hostname parameter to fix check_hostname issue
+        connection_string = f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}"
+
+        conn = sqlitecloud.connect(connection_string, verify_hostname=True)  # `verify_hostname=True` or try False
         cursor = conn.execute(f"""
             SELECT * FROM anomalies
             WHERE timestamp >= '{cutoff}'
@@ -72,9 +76,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         df = pd.DataFrame(rows, columns=cols)
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore", category=AttributeError)
-            conn.close()
+        conn.close()
 
         return df.dropna(subset=["timestamp"])
     except Exception as e:
