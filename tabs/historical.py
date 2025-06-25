@@ -1,11 +1,18 @@
 import streamlit as st
 import pandas as pd
-import numpy as np  # Ensure NumPy is imported
+import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.utils import get_historical
+from tabs.utils import get_historical  # Import the function that fetches historical data
 
-def render(thresh, highlight_color):
+# Sidebar for color selection
+highlight_color = st.sidebar.selectbox(
+    "Select Highlight Color", 
+    ["Red", "Orange", "Yellow", "Green", "Blue"], 
+    index=3  # Default to "Green"
+)
+
+def render(thresh):
     st.header("Historical DoS Data")
 
     # Date inputs for start and end date
@@ -47,7 +54,7 @@ def render(thresh, highlight_color):
             return [color] * len(row)  # Apply color to the entire row
 
         # Apply the highlighting to the rows based on "Attack"
-        st.dataframe(df_view.style.apply(highlight_attack_rows, axis=1))
+        st.dataframe(df_view.style.apply(highlight_attack_rows, axis=1))  # Use apply for row-level styling
 
         # Always display Pie Chart
         chart = px.pie(df, names="label", title="Distribution of Anomalies", hole=0.3)  # Pie chart with labels
