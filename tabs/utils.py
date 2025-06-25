@@ -194,8 +194,6 @@ def get_historical(start, end):
                     d["timestamp"] = record.get_time()
                     rows.append(d)
 
-        # Debugging output to check the fetched data
-        st.write("Fetched data:", rows)
         return pd.DataFrame(rows)
 
     except Exception as e:
