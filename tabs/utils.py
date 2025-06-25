@@ -151,18 +151,18 @@ def get_historical(start, end):
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Ensure the start and end dates are in ISO8601 format
+        # Ensure the start and end dates are in ISO8601 format (correct format for InfluxDB)
         start_str = start.strftime('%Y-%m-%dT%H:%M:%SZ')  # Format as '2025-06-18T00:00:00Z'
         end_str = end.strftime('%Y-%m-%dT%H:%M:%SZ')      # Format as '2025-06-25T23:59:59Z'
 
-        # Construct the query
+        # Construct the query to avoid any '#' character issues
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: {start_str}, stop: {end_str})  # Correct date format for InfluxDB
         |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement for DoS
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length" 
-                        or r._field == "packet_rate" or r._field == "source_port" 
-                        or r._field == "dest_port")  # Relevant fields for DoS data
+                            or r._field == "packet_rate" or r._field == "source_port" 
+                            or r._field == "dest_port")  # Relevant fields for DoS data
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
