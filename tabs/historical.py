@@ -23,7 +23,7 @@ def render(thresh, highlight_color):
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
         # Calculate reconstruction error and anomaly flags
-        df["reconstruction_error"] = np.random.default_rng().random(len(df))
+        df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Using a placeholder here for demo
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
 
@@ -48,18 +48,18 @@ def render(thresh, highlight_color):
 
         # Plot based on selected chart type
         if chart_type == "Line":
-            chart = px.line(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.line(df, x="timestamp", y="packet_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Bar":
-            chart = px.bar(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.bar(df, x="timestamp", y="packet_rate", color="label",
                            color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Pie":
             chart = px.pie(df, names="label")
         elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.area(df, x="timestamp", y="packet_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
         elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="dns_rate", color="label",
+            chart = px.scatter(df, x="timestamp", y="packet_rate", color="label",
                                color_discrete_map={"Normal": "blue", "Attack": "red"})
 
         st.plotly_chart(chart, use_container_width=True)
