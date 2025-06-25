@@ -56,29 +56,26 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Display redirect message
-    st.markdown("### You are being redirected to the **DoS Anomaly Detection** Dashboard...")
-    
-    # Embed DoS dashboard using iframe after a slight delay
-    import time
-    time.sleep(2)  # Adding a 2-second delay before the redirect
-    
+    # Display a pop-up message with clickable link
     st.markdown(
         """
         <style>
-        .iframe-container {
-            position: relative;
-            width: 100%;
-            height: 800px;
+        .popup-container {
+            padding: 20px;
+            background-color: #ffcc00;
+            border-radius: 10px;
+            font-size: 18px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .iframe-container iframe {
-            position: absolute;
-            width: 100%;
-            height: 100%;
+        .popup-container a {
+            color: #007bff;
+            text-decoration: none;
+            font-weight: bold;
         }
         </style>
-        <div class="iframe-container">
-            <iframe src="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" frameborder="0"></iframe>
+        <div class="popup-container">
+            <p>Click <a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">here</a> to view the DoS Anomaly Detection Dashboard</p>
         </div>
         """,
         unsafe_allow_html=True
