@@ -144,12 +144,16 @@ def get_dos_data():
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
+        if not INFLUXDB_URL:
+            raise ValueError("No host specified.")
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
             |> range(start: {start.isoformat()}, stop: {end.isoformat()})
             |> filter(fn: (r) => r._measurement == "dos")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dns_rate")
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length" 
+                            or r._field == "packet_rate" or r._field == "source_port" 
+                            or r._field == "dest_port")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
@@ -160,10 +164,10 @@ def get_historical(start, end):
                     d = record.values.copy()
                     d["timestamp"] = record.get_time()
                     rows.append(d)
-            st.write("Fetched data:", rows)  # Add this line for debugging
             return pd.DataFrame(rows)
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
+
 
 
