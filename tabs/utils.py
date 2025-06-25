@@ -111,7 +111,7 @@ def log_to_sqlitecloud(record):
         st.warning(f"SQLite Cloud insert failed: {e}")
 
 # --- Get Real-time DoS Data --- 
-def get_dos_data():
+ddef get_dos_data():
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
@@ -119,13 +119,13 @@ def get_dos_data():
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement for DoS data
+            |> range(start: -5m)  # Get data from the last 5 minutes
+            |> filter(fn: (r) => r._measurement == "network_traffic")  # Filter by measurement
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
-                            or r._field == "packet_rate" or r._field == "source_port"
-                            or r._field == "dest_port")  # Fields specific to DoS data
+                        or r._field == "packet_rate" or r._field == "source_port"
+                        or r._field == "dest_port")  # Fields specific to DoS data
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-            |> sort(columns: ["_time"], desc: false)
+            |> sort(columns: ["_time"], desc: false)  # Sort by timestamp
             '''
             
             # Debugging output: Print query to check its correctness
