@@ -113,49 +113,19 @@ def log_to_sqlitecloud(record):
 # --- Get Real-time DoS Data ---
 def get_dos_data():
     try:
-        if not INFLUXDB_URL:
-            raise ValueError("No host specified.")
-        
-        # Fetch live data from the last 10 seconds (or adjust based on your requirements)
-        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
-            query = f'''
-            from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -10s)  # Fetch the last 10 seconds of data
-            |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
+        query = f'''
+        from(bucket: "{INFLUXDB_BUCKET}")
+        |> range(start: -1m)  # Fetch the last 1 minute of data
+        |> filter(fn: (r) => r._measurement == "network_traffic")
+        |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
                             or r._field == "dest_port")
-            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-            |> sort(columns: ["_time"], desc: false)
-            '''
-            
-            # Debugging output: Print query to check its correctness
-            print(f"Query being sent to InfluxDB: {query}")
-            
-            # Execute the query and retrieve data
-            tables = client.query_api().query(query)
-            rows = []
-            for table in tables:
-                for record in table.records:
-                    rows.append({
-                        "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "packet_length": record.values.get("packet_length", 0.0),
-                        "packet_rate": record.values.get("packet_rate", 0.0),
-                        "source_port": record.values.get("source_port", "unknown"),
-                        "dest_port": record.values.get("dest_port", "unknown")
-                    })
-            
-            # Return the fetched data
-            return rows
-    except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
-        return []
-    except Exception as e:
-        # Catch other errors and display a warning
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
-        return []
+        |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+        |> sort(columns: ["_time"], desc: false)
+        '''
+    ```
 
+Try these updates and let me know if the DoS stream starts working correctly!
 
 
 
