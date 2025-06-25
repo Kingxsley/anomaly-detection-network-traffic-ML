@@ -27,7 +27,7 @@ SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "77cz3yvotfOw3EgNIM9xPLAWaajazSy
 def send_discord_alert(result):
     message = {
         "content": (
-            f"\U0001f6a8 **DoS Anomaly Detected!**\n"
+            f"\U0001f6a8 **DOS Anomaly Detected!**\n"
             f"**Timestamp:** {result.get('timestamp')}\n"
             f"**DNS Rate:** {result.get('dns_rate')}\n"
             f"**Inter-arrival Time:** {result.get('inter_arrival_time')}\n"
