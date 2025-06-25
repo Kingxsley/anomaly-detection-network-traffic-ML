@@ -36,7 +36,8 @@ def send_discord_alert(result):
         )
     }
     try:
-        requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
+        response = requests.post(DISCORD_WEBHOOK, json=message, timeout=20)
+        print(f"API Response: {response.text}")  # Log the full API response
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
@@ -116,11 +117,11 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Fetch live data from the last 1 minute (adjust based on your needs)
+        # Fetch live data from the last 1 minute (adjust as necessary)
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -1m)  # Last 1 minute of data
+            |> range(start: -1m)  # Fetch the last 1 minute of data
             |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                                 or r._field == "packet_rate" or r._field == "source_port"
@@ -154,6 +155,7 @@ def get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
+
 
 
 # --- Get Historical Data ---
