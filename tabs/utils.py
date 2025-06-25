@@ -111,7 +111,7 @@ def log_to_sqlitecloud(record):
         st.warning(f"SQLite Cloud insert failed: {e}")
 
 # --- Get Real-time DoS Data ---
-def get_dos_data():
+ddef get_dos_data():
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
