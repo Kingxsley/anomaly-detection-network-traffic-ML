@@ -6,7 +6,7 @@ from tabs.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, API
 
 def render(thresh, highlight_color, alerts_enabled):
     st_autorefresh(interval=10000, key="live_refresh")
-    st.header("Live DoS Stream")
+    st.header("Live DOS Stream")
 
     records = get_dos_data()
     new_predictions = []
