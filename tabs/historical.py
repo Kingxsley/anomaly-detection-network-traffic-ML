@@ -40,12 +40,12 @@ def render(thresh, highlight_color):
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-        # Apply highlight color to rows dynamically using map() (for row highlighting)
+        # Apply highlight color to rows dynamically using applymap() (for row highlighting)
         def highlight_attack_rows(row):
             color = f'background-color: {highlight_color}' if row['label'] == "Attack" else ''
-            return [color] * len(row)  # Apply color to all columns in the row
+            return [color] * len(row)  # Apply color to the entire row
 
-        # Highlight the rows where the label is "Attack"
+        # Apply the highlighting to the rows
         st.dataframe(df_view.style.apply(highlight_attack_rows, axis=1))
 
         # Always display Pie Chart
