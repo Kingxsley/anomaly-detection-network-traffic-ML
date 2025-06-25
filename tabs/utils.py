@@ -11,23 +11,23 @@ import requests
 import sqlitecloud
 import warnings
 
-# --- Secrets ---
-API_URL = st.secrets.get("API_URL", "https://huggingface.co/spaces/mizzony/DoS_Anomaly_Detection")  # Updated for DoS
-DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7")  # Updated for DoS
-INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "https://us-east-1-1.aws.cloud2.influxdata.com")  # Updated for DoS
-INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "Anormally Detection")  # Updated for DoS
-INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "realtime")  # Updated for DoS
-INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg==")  # Updated for DoS
-SQLITE_HOST = st.secrets.get("SQLITE_HOST", "cfolwawehk.g2.sqlite.cloud")  # Updated for DoS
-SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))  # Updated for DoS
-SQLITE_DB = st.secrets.get("SQLITE_DB", "dos")  # Updated for DoS
-SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "77cz3yvotfOw3EgNIM9xPLAWaajazSyxcnCWvvbxFEA")  # Updated for DoS
+# --- Secrets --- Fetch sensitive data from Streamlit secrets
+API_URL = st.secrets["API_URL"]
+DISCORD_WEBHOOK = st.secrets["DISCORD_WEBHOOK"]
+INFLUXDB_URL = st.secrets["INFLUXDB_URL"]
+INFLUXDB_ORG = st.secrets["INFLUXDB_ORG"]
+INFLUXDB_BUCKET = st.secrets["INFLUXDB_BUCKET"]
+INFLUXDB_TOKEN = st.secrets["INFLUXDB_TOKEN"]
+SQLITE_HOST = st.secrets["SQLITE_HOST"]
+SQLITE_PORT = int(st.secrets["SQLITE_PORT"])
+SQLITE_DB = st.secrets["SQLITE_DB"]
+SQLITE_APIKEY = st.secrets["SQLITE_APIKEY"]
 
-# --- Discord Alert ---
+# --- Discord Alert --- 
 def send_discord_alert(result):
     message = {
         "content": (
-            f"\U0001f6a8 **DOS Anomaly Detected!**\n"
+            f"\U0001f6a8 **DoS Anomaly Detected!**\n"
             f"**Timestamp:** {result.get('timestamp')}\n"
             f"**DNS Rate:** {result.get('dns_rate')}\n"
             f"**Inter-arrival Time:** {result.get('inter_arrival_time')}\n"
@@ -41,7 +41,7 @@ def send_discord_alert(result):
     except Exception as e:
         st.warning(f"Discord alert failed: {e}")
 
-# --- SQLiteCloud Loader ---
+# --- SQLiteCloud Loader --- 
 def load_predictions_from_sqlitecloud(time_window="-24h"):
     try:
         if "h" in time_window:
@@ -77,7 +77,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         st.error(f"SQLite Cloud error: {e}")
         return pd.DataFrame()
 
-# --- SQLiteCloud Logger ---
+# --- SQLiteCloud Logger --- 
 def log_to_sqlitecloud(record):
     try:
         conn = sqlitecloud.connect(f"sqlitecloud://{SQLITE_HOST}:{SQLITE_PORT}/{SQLITE_DB}?apikey={SQLITE_APIKEY}")
@@ -110,7 +110,7 @@ def log_to_sqlitecloud(record):
     except Exception as e:
         st.warning(f"SQLite Cloud insert failed: {e}")
 
-# --- Get Real-time DoS Data ---
+# --- Get Real-time DoS Data --- 
 def get_dos_data():
     try:
         if not INFLUXDB_URL:
@@ -147,7 +147,6 @@ def get_dos_data():
             
             # Return the fetched data
             return rows
-            
     except ValueError as ve:
         st.error(f"Value Error: {ve}")  # Handle missing URL error
         return []
@@ -157,8 +156,7 @@ def get_dos_data():
         return []
 
 
-
-# --- Get Historical Data ---
+# --- Get Historical Data --- 
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
