@@ -82,7 +82,6 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
         return pd.DataFrame()
 
 # --- SQLiteCloud Logger for DoS ---
-# utils.py
 def log_to_sqlitecloud(record):
     try:
         # Correct connection string with server_hostname
