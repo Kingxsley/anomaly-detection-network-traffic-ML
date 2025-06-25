@@ -3,7 +3,7 @@ import os
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from datetime import datetime
+from datetime import datetime, timedelta
 from sklearn.metrics import precision_score, recall_score, f1_score
 from streamlit_autorefresh import st_autorefresh
 from influxdb_client import InfluxDBClient
@@ -22,6 +22,7 @@ SQLITE_HOST = st.secrets.get("SQLITE_HOST", "cfolwawehk.g2.sqlite.cloud")  # Upd
 SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))  # Updated for DoS
 SQLITE_DB = st.secrets.get("SQLITE_DB", "dos")  # Updated for DoS
 SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "77cz3yvotfOw3EgNIM9xPLAWaajazSyxcnCWvvbxFEA")  # Updated for DoS
+
 
 # --- Discord Alert ---
 def send_discord_alert(result):
@@ -117,28 +118,35 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Fetch live data from the last 1 minute (adjust as necessary)
-        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
-            query = f'''
-            from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -1m)  # Last 1 minute of data
-            |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
-                                or r._field == "packet_rate" or r._field == "source_port"
-                                or r._field == "dest_port")
-            |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
-            |> sort(columns: ["_time"], desc: false)
-            '''
-            
-            # Debugging output: Print query to check its correctness
-            print(f"Query being sent to InfluxDB: {query}")
-            
-            # Execute the query and retrieve data
-            tables = client.query_api().query(query)
-            if not tables:
-                st.warning("No data returned from InfluxDB within the specified range.")
-                return []
+        # Get the current UTC time
+        current_time = datetime.utcnow()
 
+        # Define the time range for the query
+        start_time = (current_time - timedelta(minutes=1))  # 1 minute ago
+        end_time = current_time  # Now
+
+        # Convert to ISO8601 format for InfluxDB query
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        # Construct the query with the dynamic time range
+        query = f'''
+        from(bucket: "{INFLUXDB_BUCKET}")
+        |> range(start: {start_str}, stop: {end_str})
+        |> filter(fn: (r) => r._measurement == "network_traffic")
+        |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
+                            or r._field == "packet_rate" or r._field == "source_port"
+                            or r._field == "dest_port")
+        |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
+        |> sort(columns: ["_time"], desc: false)
+        '''
+        
+        # Debugging output: Print the query to check its correctness
+        print(f"Query being sent to InfluxDB: {query}")
+        
+        # Execute the query and retrieve data
+        with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
+            tables = client.query_api().query(query)
             rows = []
             for table in tables:
                 for record in table.records:
@@ -153,11 +161,13 @@ def get_dos_data():
             
             return rows
 
-    except Exception as e:
-        # Catch any other errors and display a warning
-        st.error(f"Error retrieving live DoS data from InfluxDB: {e}")
+    except ValueError as ve:
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
         return []
-
+    except Exception as e:
+        # Catch other errors and display a warning
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        return []
 
 # --- Get Historical Data ---
 @st.cache_data(ttl=600)
