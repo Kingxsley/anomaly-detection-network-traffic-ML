@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from tabs.utils import get_historical
 
 def render(thresh, highlight_color):
-    st.header("Historical DOS Data")
+    st.header("Historical DoS Data")
 
     # Date inputs for start and end date
     col1, col2 = st.columns(2)
@@ -23,7 +23,7 @@ def render(thresh, highlight_color):
         df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
 
         # Calculate reconstruction error and anomaly flags
-        df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Using a placeholder here for demo
+        df["reconstruction_error"] = np.random.default_rng().random(len(df))  # Placeholder for demo
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
         df["label"] = df["anomaly"].map({0: "Normal", 1: "Attack"})
 
