@@ -118,9 +118,11 @@ def get_dos_data():
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
-            |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "network_traffic")
-            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dns_rate")
+            |> range(start: -5m)  # Fetching data for the last 5 minutes
+            |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement
+            |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
+                            or r._field == "packet_rate" or r._field == "source_port" 
+                            or r._field == "dest_port")  # Relevant fields
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
@@ -131,14 +133,16 @@ def get_dos_data():
                     rows.append({
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
                         "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "dns_rate": record.values.get("dns_rate", 0.0),
-                        "source_ip": record.values.get("source_ip", "unknown"),
-                        "dest_ip": record.values.get("dest_ip", "unknown")
+                        "packet_length": record.values.get("packet_length", 0.0),
+                        "packet_rate": record.values.get("packet_rate", 0.0),
+                        "source_port": record.values.get("source_port", "unknown"),
+                        "dest_port": record.values.get("dest_port", "unknown")
                     })
             return rows
     except Exception as e:
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
+
 
 # --- Get Historical Data ---
 @st.cache_data(ttl=600)
@@ -150,13 +154,15 @@ def get_historical(start, end):
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
             |> range(start: {start.isoformat()}, stop: {end.isoformat()})
-            |> filter(fn: (r) => r._measurement == "dos")
+            |> filter(fn: (r) => r._measurement == "network_traffic")  # Corrected measurement
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length" 
                             or r._field == "packet_rate" or r._field == "source_port" 
                             or r._field == "dest_port")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
+            print(f"Query: {query}")  # Debugging the query
+
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
@@ -164,6 +170,7 @@ def get_historical(start, end):
                     d = record.values.copy()
                     d["timestamp"] = record.get_time()
                     rows.append(d)
+            st.write("Fetched data:", rows)  # Show data being fetched
             return pd.DataFrame(rows)
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
