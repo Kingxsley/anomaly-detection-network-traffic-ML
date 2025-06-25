@@ -15,8 +15,8 @@ def render(thresh, highlight_color, alerts_enabled):
     if records:
         for row in records:
             payload = {
-                "inter_arrival_time": row["inter_arrival_time"],
-                "dns_rate": row["dns_rate"]  # Assuming dns_rate is available in row
+                "inter_arrival_time": row["inter_arrival_time"],  # Correct field from InfluxDB
+                "packet_rate": row["packet_rate"]  # Replaced dns_rate with packet_rate
             }
             try:
                 response = requests.post(API_URL, json=payload, timeout=20)
