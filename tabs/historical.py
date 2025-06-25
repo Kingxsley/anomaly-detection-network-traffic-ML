@@ -1,6 +1,7 @@
+# --- Historical Data Tab ---
 import streamlit as st
 import pandas as pd
-import numpy as np  # Importing NumPy
+import numpy as np  # Ensure NumPy is imported
 import plotly.express as px
 from datetime import datetime, timedelta
 from tabs.utils import get_historical
@@ -43,8 +44,8 @@ def render(thresh, highlight_color):
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-        # Apply highlight color to the table dynamically
-        st.dataframe(df_view.style.applymap(lambda v: f'background-color: {highlight_color}' if v == "Attack" else '', subset=["label"]))
+        # Apply highlight color to the table dynamically using map() instead of applymap()
+        st.dataframe(df_view.style.map(lambda v: f'background-color: {highlight_color}' if v == "Attack" else '', subset=["label"]))
 
         # Plot based on selected chart type
         if chart_type == "Pie":
