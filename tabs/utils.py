@@ -121,11 +121,14 @@ def get_dos_data():
             |> range(start: -5m)  # Fetching data for the last 5 minutes
             |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
-                            or r._field == "packet_rate" or r._field == "source_port" 
-                            or r._field == "dest_port")  # Relevant fields
+                        or r._field == "packet_rate" or r._field == "source_port" 
+                        or r._field == "dest_port")  # Relevant fields
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
             '''
+            # Debugging the query
+            print(f"Query: {query}")
+            
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
