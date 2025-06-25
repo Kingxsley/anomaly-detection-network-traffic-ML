@@ -56,26 +56,32 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Display a pop-up message with clickable link
+    # Professional styled message with a clean design
     st.markdown(
         """
         <style>
-        .popup-container {
+        .redirect-message {
             padding: 20px;
-            background-color: #ffcc00;
-            border-radius: 10px;
+            background-color: #f0f0f5;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
             font-size: 18px;
+            color: #333;
             text-align: center;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
-        .popup-container a {
-            color: #007bff;
-            text-decoration: none;
+        .redirect-message a {
+            color: #0066cc;
             font-weight: bold;
+            text-decoration: none;
+            font-size: 18px;
+        }
+        .redirect-message a:hover {
+            text-decoration: underline;
         }
         </style>
-        <div class="popup-container">
-            <p>Click <a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">here</a> to view the DoS Anomaly Detection Dashboard</p>
+        <div class="redirect-message">
+            <p>You are being redirected to the <b>DoS Anomaly Detection</b> Dashboard.</p>
+            <p><a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">Click here</a> to view the DoS Dashboard.</p>
         </div>
         """,
         unsafe_allow_html=True
