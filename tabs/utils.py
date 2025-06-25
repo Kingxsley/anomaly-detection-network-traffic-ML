@@ -116,10 +116,10 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Create the Flux query without any comments
+        # Flux query without comments and with the correct syntax
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: -5m)
+        |> range(start: -5m)  // Query data from the last 5 minutes
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or 
                              r._field == "packet_length" or 
@@ -129,6 +129,7 @@ def get_dos_data():
         |> sort(columns: ["_time"], desc: false)
         '''
 
+        # Create an InfluxDB client and execute the query
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
@@ -143,13 +144,14 @@ def get_dos_data():
                         "dest_port": record.get_value("dest_port")
                     })
             
-            # Return the fetched data
+            # Return the data if fetched successfully
             return rows
             
     except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
+        st.error(f"Value Error: {ve}")
         return []
     except Exception as e:
+        # Return a more descriptive warning if fetching data fails
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
 
