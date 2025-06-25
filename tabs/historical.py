@@ -16,6 +16,7 @@ def render(time_range, time_range_query_map, thresh, highlight_color):
     with col2:
         end_date = st.date_input("End Date", datetime.now())
 
+    # Fetch historical data
     df = get_historical(start_date, end_date)
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
@@ -44,19 +45,3 @@ def render(time_range, time_range_query_map, thresh, highlight_color):
         if chart_type == "Line":
             chart = px.line(df, x="timestamp", y="dos_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Bar":
-            chart = px.bar(df, x="timestamp", y="dos_rate", color="label",
-                           color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Pie":
-            chart = px.pie(df, names="label")
-        elif chart_type == "Area":
-            chart = px.area(df, x="timestamp", y="dos_rate", color="label",
-                            color_discrete_map={"Normal": "blue", "Attack": "red"})
-        elif chart_type == "Scatter":
-            chart = px.scatter(df, x="timestamp", y="dos_rate", color="label",
-                               color_discrete_map={"Normal": "blue", "Attack": "red"})
-
-        st.plotly_chart(chart, use_container_width=True)
-        st.download_button("Download CSV", df.to_csv(index=False), file_name="historical_dos_data.csv")
-    else:
-        st.warning("No historical data found.")
