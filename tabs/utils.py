@@ -12,16 +12,17 @@ import sqlitecloud
 import warnings
 
 # --- DoS Settings (Hardcoded) ---
-DOS_API_URL = st.secrets.get("DOS_API_URL", "")
-DOS_DISCORD_WEBHOOK = st.secrets.get("DOS_DISCORD_WEBHOOK", "")
-DOS_INFLUXDB_URL = st.secrets.get("DOS_INFLUXDB_URL", "")
-DOS_INFLUXDB_ORG = st.secrets.get("DOS_INFLUXDB_ORG", "")
-DOS_INFLUXDB_BUCKET = st.secrets.get("DOS_INFLUXDB_BUCKET", "")
-DOS_INFLUXDB_TOKEN = st.secrets.get("DOS_INFLUXDB_TOKEN", "")
-DOS_SQLITE_HOST = st.secrets.get("DOS_SQLITE_HOST", "")
-DOS_SQLITE_PORT = int(st.secrets.get("DOS_SQLITE_PORT", 8860))
-DOS_SQLITE_DB = st.secrets.get("DOS_SQLITE_DB", "")
-DOS_SQLITE_APIKEY = st.secrets.get("DOS_SQLITE_APIKEY", "")
+API_URL = st.secrets.get("API_URL", "")
+DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "")
+INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "")
+INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "")
+INFLUXDB_BUCKET = st.secrets.get("INFLUXDB_BUCKET", "")
+INFLUXDB_TOKEN = st.secrets.get("INFLUXDB_TOKEN", "")
+SQLITE_HOST = st.secrets.get("SQLITE_HOST", "")
+SQLITE_PORT = int(st.secrets.get("SQLITE_PORT", 8860))
+SQLITE_DB = st.secrets.get("SQLITE_DB", "")
+SQLITE_APIKEY = st.secrets.get("SQLITE_APIKEY", "")
+
 
 # --- Debugging the InfluxDB URL ---
 st.write("DoS InfluxDB URL:", DOS_INFLUXDB_URL)  # Debugging line
