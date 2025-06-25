@@ -5,6 +5,7 @@ from streamlit_autorefresh import st_autorefresh
 from tabs.utils import get_dos_data, send_discord_alert, log_to_sqlitecloud, API_URL
 
 def render(thresh, highlight_color, alerts_enabled):
+    # Refresh every 10 seconds
     st_autorefresh(interval=10000, key="live_refresh")
     st.header("Live DoS Stream")
 
@@ -15,7 +16,7 @@ def render(thresh, highlight_color, alerts_enabled):
         for row in records:
             payload = {
                 "inter_arrival_time": row["inter_arrival_time"],
-                "dns_rate": row["dns_rate"]
+                "dns_rate": row["dns_rate"]  # Assuming dns_rate is available in row
             }
             try:
                 response = requests.post(API_URL, json=payload, timeout=20)
@@ -37,6 +38,7 @@ def render(thresh, highlight_color, alerts_enabled):
             st.session_state.predictions = st.session_state.predictions[-1000:]
             st.session_state.attacks = st.session_state.attacks[-1000:]
 
+    # Display the predictions in a paginated format (100 records per page)
     df = pd.DataFrame(st.session_state.predictions)
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
