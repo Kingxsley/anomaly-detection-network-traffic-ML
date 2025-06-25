@@ -56,27 +56,13 @@ if dashboard_type == "DNS Anomaly Detection":
         historical.render(thresh, highlight_color)
 
 elif dashboard_type == "DoS Anomaly Detection":
-    # Show a link to open the DoS Dashboard in a new tab
+    # Automatically redirect to DoS dashboard in a new tab
     st.markdown(
         """
-        <style>
-        .redirect-button {
-            display: flex;
-            justify-content: center;
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #4CAF50;
-            color: white;
-            font-size: 16px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        </style>
-        <div class="redirect-button">
-            <a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank" style="text-decoration: none; color: white;">
-                Open DoS Anomaly Detection in a New Tab
-            </a>
-        </div>
+        <script type="text/javascript">
+            window.open("https://anomaly-detection-network-traffic-ml-dos.streamlit.app/", "_blank");
+            window.location.href = "https://anomaly-detection-network-traffic-ml-dos.streamlit.app/";
+        </script>
         """,
         unsafe_allow_html=True
     )
