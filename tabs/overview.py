@@ -1,12 +1,12 @@
-# overview.py
-
 import streamlit as st
 import pandas as pd
-from tabs.utils import load_predictions_from_sqlitecloud  # Use DoS loader function
+import plotly.express as px
+from streamlit_autorefresh import st_autorefresh
+from tabs.utils import load_predictions_from_sqlitecloud
 
 def render(time_range, time_range_query_map):
-    st.title("DoS Overview")  # Static title for DoS
-
+    st_autorefresh(interval=30000, key="overview_refresh")
+    st.title("DoS Anomaly Detection Overview")
     query_duration = time_range_query_map.get(time_range, "-24h")
     df = load_predictions_from_sqlitecloud(time_window=query_duration)
 
@@ -27,3 +27,51 @@ def render(time_range, time_range_query_map):
         summary_cols[0].metric("Average Reconstruction Error", f"{avg_error:.4f}")
         summary_cols[1].metric("Max Reconstruction Error", f"{max_error:.4f}")
         summary_cols[2].metric("Min Reconstruction Error", f"{min_error:.4f}")
+
+        st.markdown("### Times with Most Attacks")
+        attack_df = df[df["is_anomaly"] == 1].copy()
+        attack_df["time"] = pd.to_datetime(attack_df["timestamp"]).dt.strftime('%Y-%m-%d %H:00')
+        top_times = attack_df["time"].value_counts().nlargest(5).reset_index()
+        top_times.columns = ["Time (Hour Block)", "Attack Count"]
+        st.dataframe(top_times.style.format(), use_container_width=True)
+
+        st.markdown("### Top Source IPs")
+        ip_counts = df[df["is_anomaly"] == 1]["source_ip"].value_counts().nlargest(10).reset_index()
+        ip_counts.columns = ["source_ip", "count"]
+        fig_ip = px.bar(
+            ip_counts,
+            x="source_ip",
+            y="count",
+            labels={"source_ip": "Source IP", "count": "Anomaly Count"},
+            text_auto=True
+        )
+        st.plotly_chart(fig_ip, use_container_width=True)
+
+        st.markdown("### Top Destination IPs")
+        dest_counts = df[df["is_anomaly"] == 1]["dest_ip"].value_counts().nlargest(10).reset_index()
+        dest_counts.columns = ["dest_ip", "count"]
+        fig_dest = px.bar(
+            dest_counts,
+            x="dest_ip",
+            y="count",
+            labels={"dest_ip": "Destination IP", "count": "Anomaly Count"},
+            text_auto=True
+        )
+        st.plotly_chart(fig_dest, use_container_width=True)
+
+        st.markdown("### Anomaly Score Over Time")
+        fig = px.line(
+            df,
+            x="timestamp",
+            y="anomaly_score",
+            color=df["is_anomaly"].map({1: "Attack", 0: "Normal"}).astype(str),
+            labels={"color": "Anomaly Type"},
+            title="Anomaly Score Over Time"
+        )
+        st.plotly_chart(fig, use_container_width=True)
+
+        st.markdown("### Recent Attack Details")
+        recent_attacks = df[df["is_anomaly"] == 1].sort_values("timestamp", ascending=False).head(10)
+        st.dataframe(recent_attacks[["timestamp", "source_ip", "dest_ip", "anomaly_score"]], use_container_width=True)
+    else:
+        st.info("No predictions available in the selected time range.")
