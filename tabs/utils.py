@@ -114,9 +114,9 @@ def log_to_sqlitecloud(record):
 def get_dos_data():
     try:
         if not INFLUXDB_URL:
-            raise ValueError("No host specified.")
-        
-        # Flux query without comments and with the correct syntax
+            raise ValueError("No InfluxDB URL specified.")
+
+        # Ensure the query is syntactically correct for Flux
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
         |> range(start: -5m)  // Query data from the last 5 minutes
@@ -128,31 +128,36 @@ def get_dos_data():
                              r._field == "dest_port")
         |> sort(columns: ["_time"], desc: false)
         '''
-
-        # Create an InfluxDB client and execute the query
+        
+        # Log the query for debugging purposes
+        print(f"Executing query: {query}")
+        
+        # Execute the query
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
             for table in tables:
                 for record in table.records:
-                    rows.append({
+                    # Check if all values are available and assign them correctly
+                    row = {
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
                         "inter_arrival_time": record.get_value("inter_arrival_time"),
                         "packet_length": record.get_value("packet_length"),
                         "packet_rate": record.get_value("packet_rate"),
                         "source_port": record.get_value("source_port"),
                         "dest_port": record.get_value("dest_port")
-                    })
-            
-            # Return the data if fetched successfully
-            return rows
-            
+                    }
+                    rows.append(row)
+        
+        # Return the fetched rows
+        return rows
+        
     except ValueError as ve:
         st.error(f"Value Error: {ve}")
         return []
     except Exception as e:
-        # Return a more descriptive warning if fetching data fails
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        # Provide detailed error message for easier debugging
+        st.warning(f"Error fetching live DoS data from InfluxDB: {e}")
         return []
 
 
