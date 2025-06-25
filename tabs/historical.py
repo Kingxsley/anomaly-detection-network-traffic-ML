@@ -1,13 +1,10 @@
-# historical.py
-
 import streamlit as st
 import pandas as pd
-import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.utils import get_historical
+from tabs.utils import get_dos_data  # Use the InfluxDB query function from utils.py
 
-def render(thresh, highlight_color):  # Accept only `thresh` and `highlight_color`
+def render(thresh, highlight_color):
     st.header("Historical DoS Data")
 
     # Date input from user for selecting the date range
@@ -18,10 +15,10 @@ def render(thresh, highlight_color):  # Accept only `thresh` and `highlight_colo
         end_date = st.date_input("End Date", datetime.now())
 
     # Fetch historical data from InfluxDB
-    df = get_historical(start_date, end_date)
+    df = get_dos_data(start_date, end_date)  # Fetch data using the InfluxDB query function from utils.py
     if not df.empty:
         df["timestamp"] = pd.to_datetime(df["timestamp"])
-        
+
         # Simulate reconstruction error and anomaly detection
         df["reconstruction_error"] = np.random.default_rng().random(len(df))
         df["anomaly"] = (df["reconstruction_error"] > thresh).astype(int)
