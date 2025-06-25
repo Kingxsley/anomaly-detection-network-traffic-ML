@@ -111,7 +111,7 @@ def log_to_sqlitecloud(record):
         st.warning(f"SQLite Cloud insert failed: {e}")
 
 # --- Get Real-time DoS Data ---
-ddef get_dos_data():
+def get_dos_data():
     try:
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
@@ -129,9 +129,6 @@ ddef get_dos_data():
                                  r._field == "dest_port")
             |> sort(columns: ["_time"], desc: false)
             '''
-            
-            # Debugging output: Print query to check its correctness
-            print(f"Query being sent to InfluxDB: {query}")
             
             # Execute the query and retrieve data
             tables = client.query_api().query(query)
@@ -157,7 +154,6 @@ ddef get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
-
 
 
 
