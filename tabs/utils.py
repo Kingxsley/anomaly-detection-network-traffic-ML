@@ -153,6 +153,7 @@ def get_dos_data():
 
 
 
+
 # --- Get Historical Data ---
 @st.cache_data(ttl=600)
 def get_historical(start, end):
