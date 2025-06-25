@@ -118,21 +118,21 @@ def get_dos_data():
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Get current UTC time (as per InfluxDB's expectation)
-        current_time = datetime.utcnow()
+        # Force UTC time by using datetime.utcnow()
+        current_time = datetime.utcnow()  # Get current UTC time
 
-        # Define a start time (e.g., 5 minutes ago) and end time (now)
-        start_time = current_time - timedelta(minutes=5)
-        end_time = current_time
+        # Set the time range (e.g., 5 minutes ago to now)
+        start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
+        end_time = current_time  # Now
 
-        # Format the start and end times in ISO 8601 format (standard for InfluxDB)
+        # Convert the start and end times to the ISO 8601 format for InfluxDB
         start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
         end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
 
-        # Construct the query
+        # Construct the InfluxDB query
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str})  # Properly formatted start and end time
+        |> range(start: {start_str}, stop: {end_str})  # Correct UTC time range
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -141,7 +141,7 @@ def get_dos_data():
         |> sort(columns: ["_time"], desc: false)
         '''
         
-        # Debugging output: Ensure query is formatted properly
+        # Debugging output: Ensure the query is properly formatted
         print(f"Query being sent to InfluxDB: {query}")
         
         # Execute the query and retrieve data from InfluxDB
@@ -168,6 +168,7 @@ def get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
+        
 # --- Get Historical Data ---
 @st.cache_data(ttl=600)
 def get_historical(start, end):
