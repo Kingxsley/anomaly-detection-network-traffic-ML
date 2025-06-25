@@ -84,7 +84,7 @@ def load_predictions_from_sqlitecloud(time_window="-24h"):
 # --- SQLiteCloud Logger for DoS ---
 def log_to_sqlitecloud(record):
     try:
-        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}")
+        conn = sqlitecloud.connect(f"sqlitecloud://{DOS_SQLITE_HOST}:{DOS_SQLITE_PORT}/{DOS_SQLITE_DB}?apikey={DOS_SQLITE_APIKEY}&server_hostname={DOS_SQLITE_HOST}")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS anomalies (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
