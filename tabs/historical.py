@@ -3,16 +3,10 @@ import pandas as pd
 import numpy as np
 import plotly.express as px
 from datetime import datetime, timedelta
-from tabs.utils import get_historical  # Import the function that fetches historical data
+from tabs.utils import get_historical
 
-# Sidebar for color selection
-highlight_color = st.sidebar.selectbox(
-    "Select Highlight Color", 
-    ["Red", "Orange", "Yellow", "Green", "Blue"], 
-    index=3  # Default to "Green"
-)
-
-def render(thresh):
+# Update the render function to accept both thresh and highlight_color
+def render(thresh, highlight_color):
     st.header("Historical DoS Data")
 
     # Date inputs for start and end date
