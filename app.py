@@ -25,7 +25,7 @@ alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 # --- Sidebar for Dashboard Toggle (DNS vs DoS) ---
 dashboard_type = st.sidebar.radio(
     "Select Dashboard",
-    ("DNS Anomaly Detection", "DoS Anomaly Detection"),
+    ("DNS Anomaly Detection", "DOS Anomaly Detection"),
     index=0  # Default to DNS Anomaly Detection
 )
 
@@ -55,7 +55,7 @@ if dashboard_type == "DNS Anomaly Detection":
     with tabs[4]:
         historical.render(thresh, highlight_color)
 
-elif dashboard_type == "DoS Anomaly Detection":
+elif dashboard_type == "DOS Anomaly Detection":
     # Professional styled message with a clean design
     st.markdown(
         """
@@ -80,7 +80,7 @@ elif dashboard_type == "DoS Anomaly Detection":
         }
         </style>
         <div class="redirect-message">
-            <p>You are being redirected to the <b>DoS Anomaly Detection</b> Dashboard.</p>
+            <p>You are being redirected to the <b>DOS Anomaly Detection</b> Dashboard.</p>
             <p><a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">Click here</a> to view the DoS Dashboard.</p>
         </div>
         """,
