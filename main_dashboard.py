@@ -1,5 +1,3 @@
-# main_dashboard.py
-
 import streamlit as st
 from tabs import overview
 from tabs import live_stream
@@ -7,9 +5,10 @@ from tabs import manual_entry
 from tabs import metrics
 from tabs import historical
 
-st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")
+st.set_page_config(page_title="Unified Anomaly Detection Dashboard", layout="wide")
 
 # --- Sidebar Settings ---
+dashboard_toggle = st.sidebar.selectbox("Select Dashboard", ["DNS Dashboard", "DoS Dashboard"])
 time_range_query_map = {
     "Last 30 min": "-30m",
     "Last 1 hour": "-1h",
@@ -29,20 +28,29 @@ if "predictions" not in st.session_state:
 if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
-# --- Tabs Navigation ---
-tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
+# --- Render the selected dashboard ---
+if dashboard_toggle == "DNS Dashboard":
+    tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
-with tabs[0]:
-    overview.render(time_range, time_range_query_map)
+    with tabs[0]:
+        overview.render(time_range, time_range_query_map)
 
-with tabs[1]:
-    live_stream.render(thresh, highlight_color, alerts_enabled)
+    with tabs[1]:
+        live_stream.render(thresh, highlight_color, alerts_enabled)
 
-with tabs[2]:
-    manual_entry.render()
+    with tabs[2]:
+        manual_entry.render()
 
-with tabs[3]:
-    metrics.render(thresh)
+    with tabs[3]:
+        metrics.render(thresh)
 
-with tabs[4]:
-    historical.render(thresh, highlight_color)  # Pass only `thresh` and `highlight_color`
+    with tabs[4]:
+        historical.render(thresh, highlight_color)
+
+elif dashboard_toggle == "DoS Dashboard":
+    # Here, you would include the DoS code and tabs (you can add your DoS dashboard functions).
+    st.title("DoS Anomaly Detection Dashboard")
+    st.markdown("This is where your DoS dashboard will be.")
+    # For example, you can create another similar structure for DoS just like DNS.
+    st.write("DoS Dashboard Content Goes Here.")
+
