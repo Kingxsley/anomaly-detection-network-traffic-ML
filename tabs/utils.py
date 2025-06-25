@@ -168,7 +168,7 @@ def get_dos_data():
         # Catch other errors and display a warning
         st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
-        
+
 # --- Get Historical Data ---
 @st.cache_data(ttl=600)
 def get_historical(start, end):
