@@ -119,7 +119,7 @@ def get_dos_data():
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
             |> range(start: -5m)
-            |> filter(fn: (r) => r._measurement == "dos")
+            |> filter(fn: (r) => r._measurement == "network_traffic")
             |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "dns_rate")
             |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
             |> sort(columns: ["_time"], desc: false)
