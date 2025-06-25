@@ -65,7 +65,7 @@ if toggle_redirect == "Go to DNS Dashboard":
         </style>
         <div class="redirect-message">
             <p>You are being redirected to the <b>DNS Anomaly Detection</b> Dashboard.</p>
-            <p><a href="https://anomaly-detection-network-traffic-ml-dns.streamlit.app/" target="_blank">Click here</a> to go to DNS Dashboard.</p>
+            <p><a href="https://dnscapstone.streamlit.app/" target="_blank">Click here</a> to go to DNS Dashboard.</p>
         </div>
         """,
         unsafe_allow_html=True
