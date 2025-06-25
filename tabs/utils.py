@@ -165,26 +165,26 @@ def get_historical(start, end):
         if not INFLUXDB_URL:
             raise ValueError("No host specified.")
         
-        # Ensure start and end dates are in ISO8601 format (UTC timezone)
+        # Ensure start and end dates are in ISO8601 format for Flux queries
         start_str = start.strftime('%Y-%m-%dT%H:%M:%SZ')  # Format as '2025-06-18T00:00:00Z'
         end_str = end.strftime('%Y-%m-%dT%H:%M:%SZ')      # Format as '2025-06-25T23:59:59Z'
 
-        # Construct the query to retrieve the specified fields for DoS data
+        # Construct the query without comments or stray characters
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str})  # Correct date format for InfluxDB
-        |> filter(fn: (r) => r._measurement == "network_traffic")  # Correct measurement for DoS data
+        |> range(start: {start_str}, stop: {end_str})
+        |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "dest_port" or r._field == "inter_arrival_time"
-                        or r._field == "packet_length" or r._field == "packet_rate"
-                        or r._field == "source_port" or r._field == "label")  # Relevant fields for DoS data
+                            or r._field == "packet_length" or r._field == "packet_rate"
+                            or r._field == "source_port" or r._field == "label")
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-        
-        # Debugging output: Print the query being sent to check its correctness
+
+        # Debugging output: Check the query being sent
         print(f"Query being sent to InfluxDB: {query}")
         
-        # Execute the query and retrieve the data
+        # Execute the query and retrieve data
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
