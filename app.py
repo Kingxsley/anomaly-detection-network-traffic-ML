@@ -81,7 +81,7 @@ elif dashboard_type == "DOS Anomaly Detection":
         </style>
         <div class="redirect-message">
             <p>You are being redirected to the <b>DOS Anomaly Detection</b> Dashboard.</p>
-            <p><a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">Click here</a> to view the DoS Dashboard.</p>
+            <p><a href="https://anomaly-detection-network-traffic-ml-dos.streamlit.app/" target="_blank">Click here</a> to view the DOS Dashboard.</p>
         </div>
         """,
         unsafe_allow_html=True
