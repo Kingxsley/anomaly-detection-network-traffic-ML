@@ -1,6 +1,6 @@
-# --- main app.py --- 
+# main_dashboard.py
+
 import streamlit as st
-import pandas as pd
 from tabs import overview
 from tabs import live_stream
 from tabs import manual_entry
@@ -9,7 +9,7 @@ from tabs import historical
 
 st.set_page_config(page_title="DoS Anomaly Detection Dashboard", layout="wide")
 
-# --- Sidebar Settings --- 
+# --- Sidebar Settings ---
 time_range_query_map = {
     "Last 30 min": "-30m",
     "Last 1 hour": "-1h",
@@ -23,13 +23,13 @@ thresh = st.sidebar.slider("Anomaly Threshold", 0.01, 1.0, 0.1, 0.01)
 highlight_color = st.sidebar.selectbox("Highlight Color", ["Red", "Orange", "Yellow", "Green", "Blue"], index=3)
 alerts_enabled = st.sidebar.checkbox("Enable Discord Alerts", value=True)
 
-# --- State Initialization --- 
+# --- State Initialization ---
 if "predictions" not in st.session_state:
     st.session_state.predictions = []
 if "attacks" not in st.session_state:
     st.session_state.attacks = []
 
-# --- Tabs Navigation --- 
+# --- Tabs Navigation ---
 tabs = st.tabs(["Overview", "Live Stream", "Manual Entry", "Metrics", "Historical Data"])
 
 with tabs[0]:
@@ -45,4 +45,4 @@ with tabs[3]:
     metrics.render(thresh)
 
 with tabs[4]:
-    historical.render(time_range, time_range_query_map, thresh, highlight_color)  # Pass time_range here
+    historical.render(thresh, highlight_color)  # Only pass `thresh` and `highlight_color`
