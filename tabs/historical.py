@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from tabs.utils import get_historical
 
 def render(thresh, highlight_color):
-    st.header("Historical DoS Data")
+    st.header("Historical DOS Data")
 
     # Date inputs for start and end date
     col1, col2 = st.columns(2)
