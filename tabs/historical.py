@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 from tabs.utils import get_historical
 
 def render(thresh, highlight_color):
-    st.header("Historical DOS Data")
+    st.header("Historical DoS Data")
 
     col1, col2 = st.columns(2)
     with col1:
@@ -29,16 +29,16 @@ def render(thresh, highlight_color):
 
         chart_type = st.selectbox("Chart Type", ["Line", "Bar", "Pie", "Area", "Scatter"], index=0)
 
+        # Pagination Setup
         rows_per_page = 100
         total_pages = (len(df) - 1) // rows_per_page + 1
         page = st.number_input("Historical Page", 1, total_pages, 1, key="hist_page") - 1
         df_view = df.iloc[page * rows_per_page:(page + 1) * rows_per_page]
 
-        def highlight_hist(row):
-            return [f"background-color: {highlight_color}" if row["anomaly"] == 1 else ""] * len(row)
+        # Show all columns, display the paginated data
+        st.dataframe(df_view)
 
-        st.dataframe(df_view.style.apply(highlight_hist, axis=1))
-
+        # Plotting the selected chart type
         if chart_type == "Line":
             chart = px.line(df, x="timestamp", y="dns_rate", color="label",
                             color_discrete_map={"Normal": "blue", "Attack": "red"})
