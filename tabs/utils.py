@@ -144,8 +144,6 @@ def get_dos_data():
 @st.cache_data(ttl=600)
 def get_historical(start, end):
     try:
-        if not INFLUXDB_URL:
-            raise ValueError("No host specified.")
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             query = f'''
             from(bucket: "{INFLUXDB_BUCKET}")
@@ -162,8 +160,10 @@ def get_historical(start, end):
                     d = record.values.copy()
                     d["timestamp"] = record.get_time()
                     rows.append(d)
+            st.write("Fetched data:", rows)  # Add this line for debugging
             return pd.DataFrame(rows)
     except Exception as e:
         st.error(f"Error retrieving historical data: {e}")
         return pd.DataFrame()
+
 
