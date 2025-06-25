@@ -45,4 +45,4 @@ with tabs[3]:
     metrics.render(thresh)
 
 with tabs[4]:
-    historical.render(thresh, highlight_color)  # Only pass `thresh` and `highlight_color`
+    historical.render(thresh, highlight_color)  # Pass only `thresh` and `highlight_color`
