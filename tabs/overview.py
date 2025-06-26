@@ -13,9 +13,9 @@ def render(time_range, time_range_query_map):
     
     if not df.empty:
         # Debug info - remove in production
-        st.write(f"Debug: DataFrame shape: {df.shape}")
-        st.write(f"Debug: Columns: {list(df.columns)}")
-        st.write(f"Debug: is_anomaly values: {df['is_anomaly'].value_counts().to_dict()}")
+        #st.write(f"Debug: DataFrame shape: {df.shape}")
+        #st.write(f"Debug: Columns: {list(df.columns)}")
+       # st.write(f"Debug: is_anomaly values: {df['is_anomaly'].value_counts().to_dict()}")
         
         total_predictions = len(df)
         attack_rate = df["is_anomaly"].mean()
