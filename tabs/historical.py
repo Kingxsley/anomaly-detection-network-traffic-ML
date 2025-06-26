@@ -52,9 +52,9 @@ def render(thresh, highlight_color):
         max_rows = st.number_input(
             "Max rows to display (0 = all)", 
             min_value=0, 
-            max_value=50000, 
-            value=10000,
-            step=1000,
+            max_value=1000, 
+            value=100,
+            step=10,
             help="Limit the number of rows to improve performance"
         )
     with col2:
