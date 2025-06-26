@@ -1,4 +1,4 @@
-# Fixed implementation for your DOS dashboard tabs
+# Fixed DOS Dashboard Implementation for Real-time Prediction API
 
 # tabs/overview.py
 import streamlit as st
@@ -6,172 +6,257 @@ import pandas as pd
 import requests
 import plotly.express as px
 import plotly.graph_objects as go
+import numpy as np
 from datetime import datetime, timedelta
+import json
+
+def generate_sample_traffic(num_samples=50):
+    """Generate sample network traffic data for testing"""
+    np.random.seed(42)  # For reproducible results
+    
+    protocols = ['tcp', 'udp', 'http', 'https', 'dns']
+    traffic_data = []
+    
+    for i in range(num_samples):
+        # Generate realistic network traffic patterns
+        if i < 40:  # Normal traffic (80%)
+            inter_arrival_time = np.random.uniform(0.05, 0.2)
+            packet_length = np.random.randint(64, 1500)
+            protocol = np.random.choice(['tcp', 'http', 'https'], p=[0.4, 0.3, 0.3])
+        else:  # Potential DOS attack patterns (20%)
+            inter_arrival_time = np.random.uniform(0.001, 0.01)  # Very fast
+            packet_length = np.random.randint(1400, 1500)  # Large packets
+            protocol = np.random.choice(['tcp', 'udp'], p=[0.7, 0.3])
+        
+        traffic_data.append({
+            "inter_arrival_time": round(inter_arrival_time, 4),
+            "packet_length": packet_length,
+            "protocol": protocol
+        })
+    
+    return traffic_data
 
 def render(time_range, time_range_query_map):
     st.header("📊 DOS Anomaly Detection Overview")
     
-    query = time_range_query_map[time_range]
+    API_URL = "https://mizzony-dos-anomaly-detection.hf.space"
     
-    try:
-        # Replace with your actual API endpoint
-        API_URL = "https://mizzony-dos-anomaly-detection.hf.space/predict“  # Update this with your actual API URL
-        response = requests.get(f"{API_URL}?time_range={query}")
+    # API Health Check
+    col1, col2 = st.columns([3, 1])
+    with col2:
+        if st.button("🔄 Check API Status"):
+            try:
+                health_response = requests.get(f"{API_URL}/health", timeout=10)
+                if health_response.status_code == 200:
+                    health_data = health_response.json()
+                    st.success(f"✅ API Status: {health_data.get('status', 'Unknown')}")
+                    if health_data.get('models_loaded'):
+                        st.info("🤖 Models loaded successfully")
+                else:
+                    st.error(f"❌ API Error: {health_response.status_code}")
+            except Exception as e:
+                st.error(f"❌ Connection failed: {str(e)}")
+    
+    with col1:
+        st.subheader("Real-time Network Traffic Analysis")
+    
+    # Generate and analyze sample traffic
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        num_samples = st.slider("Number of Traffic Samples", 10, 100, 50)
         
-        if response.status_code == 200:
-            data = response.json()
-            
-            if data and len(data) > 0:
-                # Create DataFrame from the API response
-                df = pd.DataFrame(data)
+    with col2:
+        if st.button("🔍 Analyze Traffic Sample"):
+            with st.spinner("Analyzing network traffic..."):
+                # Generate sample data
+                traffic_data = generate_sample_traffic(num_samples)
                 
-                # Display basic stats
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Total Records", len(df))
-                
-                with col2:
-                    anomaly_count = df['anomaly'].sum()
-                    st.metric("Anomalies Detected", anomaly_count)
-                
-                with col3:
-                    avg_score = df['anomaly_score'].mean()
-                    st.metric("Avg Anomaly Score", f"{avg_score:.3f}")
-                
-                with col4:
-                    max_score = df['anomaly_score'].max()
-                    st.metric("Max Anomaly Score", f"{max_score:.3f}")
-                
-                # Anomaly Score Distribution
-                st.subheader("📈 Anomaly Score Distribution")
-                fig_hist = px.histogram(df, x='anomaly_score', nbins=20, 
-                                       title="Distribution of Anomaly Scores")
-                st.plotly_chart(fig_hist, use_container_width=True)
-                
-                # Anomaly Detection Over Time (simulated time series)
-                st.subheader("⏰ Anomaly Detection Timeline")
-                
-                # Since your API doesn't return timestamps, let's create a simulated timeline
-                # based on the data points
-                df_with_time = df.copy()
-                
-                # Create timestamps going backwards from now
-                now = datetime.now()
-                time_delta = timedelta(minutes=5)  # 5 minutes between each data point
-                
-                timestamps = []
-                for i in range(len(df)):
-                    timestamps.append(now - (time_delta * (len(df) - i - 1)))
-                
-                df_with_time['timestamp'] = timestamps
-                
-                # Create time series chart
-                fig_time = go.Figure()
-                
-                # Add anomaly score line
-                fig_time.add_trace(go.Scatter(
-                    x=df_with_time['timestamp'],
-                    y=df_with_time['anomaly_score'],
-                    mode='lines+markers',
-                    name='Anomaly Score',
-                    line=dict(color='blue', width=2)
-                ))
-                
-                # Highlight anomalies
-                anomaly_data = df_with_time[df_with_time['anomaly'] == 1]
-                if not anomaly_data.empty:
-                    fig_time.add_trace(go.Scatter(
-                        x=anomaly_data['timestamp'],
-                        y=anomaly_data['anomaly_score'],
-                        mode='markers',
-                        name='Detected Anomalies',
-                        marker=dict(color='red', size=10, symbol='diamond')
-                    ))
-                
-                fig_time.update_layout(
-                    title="Anomaly Scores Over Time",
-                    xaxis_title="Time",
-                    yaxis_title="Anomaly Score",
-                    hovermode='x unified'
-                )
-                
-                st.plotly_chart(fig_time, use_container_width=True)
-                
-                # Anomaly Status Breakdown
-                st.subheader("🔍 Anomaly Status Breakdown")
-                
-                anomaly_counts = df['anomaly'].value_counts()
-                labels = ['Normal', 'Anomaly']
-                values = [anomaly_counts.get(0, 0), anomaly_counts.get(1, 0)]
-                
-                fig_pie = px.pie(values=values, names=labels, 
-                               title="Normal vs Anomaly Distribution",
-                               color_discrete_map={'Normal': 'lightblue', 'Anomaly': 'red'})
-                st.plotly_chart(fig_pie, use_container_width=True)
-                
-                # Score Range Analysis
-                st.subheader("📊 Score Range Analysis")
-                
-                # Create score ranges
-                df['score_range'] = pd.cut(df['anomaly_score'], 
-                                         bins=[0, 0.3, 0.6, 0.8, 1.0], 
-                                         labels=['Low (0-0.3)', 'Medium (0.3-0.6)', 
-                                                'High (0.6-0.8)', 'Critical (0.8-1.0)'])
-                
-                range_counts = df['score_range'].value_counts()
-                
-                fig_range = px.bar(x=range_counts.index, y=range_counts.values,
-                                  title="Distribution by Score Range",
-                                  labels={'x': 'Score Range', 'y': 'Count'})
-                st.plotly_chart(fig_range, use_container_width=True)
-                
-                # Recent High-Score Entries
-                st.subheader("⚠ Recent High-Score Detections")
-                high_score_threshold = 0.7
-                high_scores = df[df['anomaly_score'] >= high_score_threshold].sort_values('anomaly_score', ascending=False)
-                
-                if not high_scores.empty:
-                    # Add simulated additional details for display
-                    display_data = high_scores.copy()
-                    display_data['Detection_Time'] = df_with_time.loc[high_scores.index, 'timestamp'].dt.strftime('%Y-%m-%d %H:%M:%S')
-                    display_data['Risk_Level'] = display_data['anomaly_score'].apply(
-                        lambda x: 'CRITICAL' if x >= 0.9 else 'HIGH' if x >= 0.8 else 'MEDIUM'
+                try:
+                    # Make prediction request
+                    response = requests.post(
+                        f"{API_URL}/predict",
+                        headers={"Content-Type": "application/json"},
+                        json=traffic_data,
+                        timeout=30
                     )
                     
-                    st.dataframe(
-                        display_data[['Detection_Time', 'anomaly_score', 'anomaly', 'Risk_Level']].rename(columns={
-                            'anomaly_score': 'Anomaly Score',
-                            'anomaly': 'Anomaly Flag',
-                            'Risk_Level': 'Risk Level'
-                        }),
-                        use_container_width=True
-                    )
-                else:
-                    st.info(f"No detections with score >= {high_score_threshold} in the selected time range.")
-                
-            else:
-                st.warning("No data available for the selected time range.")
-                
-        else:
-            st.error(f"API Error: {response.status_code} - {response.text}")
-            
-    except requests.exceptions.RequestException as e:
-        st.error(f"Connection Error: {str(e)}")
-    except Exception as e:
-        st.error(f"Unexpected Error: {str(e)}")
+                    if response.status_code == 200:
+                        predictions = response.json()
+                        
+                        # Store in session state for other tabs
+                        st.session_state.predictions = predictions
+                        st.session_state.traffic_data = traffic_data
+                        st.session_state.last_analysis_time = datetime.now()
+                        
+                        # Create DataFrame for analysis
+                        df = pd.DataFrame(predictions)
+                        traffic_df = pd.DataFrame(traffic_data)
+                        
+                        # Combine traffic data with predictions
+                        combined_df = pd.concat([traffic_df, df], axis=1)
+                        
+                        # Display results
+                        st.success(f"✅ Analyzed {len(predictions)} traffic samples")
+                        
+                        # Key Metrics
+                        st.subheader("📈 Analysis Results")
+                        
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            total_samples = len(df)
+                            st.metric("Total Samples", total_samples)
+                        
+                        with col2:
+                            anomaly_count = df['anomaly'].sum()
+                            st.metric("Anomalies Detected", anomaly_count)
+                        
+                        with col3:
+                            avg_score = df['anomaly_score'].mean()
+                            st.metric("Avg Anomaly Score", f"{avg_score:.3f}")
+                        
+                        with col4:
+                            detection_rate = (anomaly_count / total_samples * 100) if total_samples > 0 else 0
+                            st.metric("Detection Rate", f"{detection_rate:.1f}%")
+                        
+                        # Visualization
+                        st.subheader("📊 Traffic Analysis Visualization")
+                        
+                        # Create tabs for different views
+                        viz_tabs = st.tabs(["Score Distribution", "Traffic Patterns", "Anomaly Timeline", "Protocol Analysis"])
+                        
+                        with viz_tabs[0]:
+                            # Score Distribution
+                            fig_hist = px.histogram(
+                                df, x='anomaly_score', nbins=20,
+                                title="Anomaly Score Distribution",
+                                color='anomaly',
+                                color_discrete_map={0: 'lightblue', 1: 'red'}
+                            )
+                            st.plotly_chart(fig_hist, use_container_width=True)
+                        
+                        with viz_tabs[1]:
+                            # Traffic Patterns
+                            fig_scatter = px.scatter(
+                                combined_df, 
+                                x='inter_arrival_time', 
+                                y='packet_length',
+                                color='anomaly',
+                                size='anomaly_score',
+                                title="Traffic Patterns (Packet Length vs Inter-arrival Time)",
+                                color_discrete_map={0: 'blue', 1: 'red'},
+                                hover_data=['protocol', 'anomaly_score']
+                            )
+                            st.plotly_chart(fig_scatter, use_container_width=True)
+                        
+                        with viz_tabs[2]:
+                            # Timeline
+                            combined_df['sample_id'] = range(len(combined_df))
+                            fig_timeline = px.line(
+                                combined_df, 
+                                x='sample_id', 
+                                y='anomaly_score',
+                                title="Anomaly Scores Over Sample Sequence",
+                                markers=True
+                            )
+                            
+                            # Highlight anomalies
+                            anomaly_data = combined_df[combined_df['anomaly'] == 1]
+                            if not anomaly_data.empty:
+                                fig_timeline.add_scatter(
+                                    x=anomaly_data['sample_id'],
+                                    y=anomaly_data['anomaly_score'],
+                                    mode='markers',
+                                    marker=dict(color='red', size=10, symbol='diamond'),
+                                    name='Detected Anomalies'
+                                )
+                            
+                            st.plotly_chart(fig_timeline, use_container_width=True)
+                        
+                        with viz_tabs[3]:
+                            # Protocol Analysis
+                            protocol_analysis = combined_df.groupby(['protocol', 'anomaly']).size().reset_index(name='count')
+                            fig_protocol = px.bar(
+                                protocol_analysis,
+                                x='protocol',
+                                y='count',
+                                color='anomaly',
+                                title="Anomaly Distribution by Protocol",
+                                color_discrete_map={0: 'lightblue', 1: 'red'}
+                            )
+                            st.plotly_chart(fig_protocol, use_container_width=True)
+                        
+                        # Detailed Results Table
+                        st.subheader("🔍 Detailed Analysis Results")
+                        
+                        # Show high-risk samples
+                        high_risk = combined_df[combined_df['anomaly_score'] >= 0.7].sort_values('anomaly_score', ascending=False)
+                        
+                        if not high_risk.empty:
+                            st.write("*High-Risk Traffic Samples:*")
+                            display_columns = ['inter_arrival_time', 'packet_length', 'protocol', 'anomaly_score', 'anomaly']
+                            st.dataframe(
+                                high_risk[display_columns].rename(columns={
+                                    'inter_arrival_time': 'Inter-arrival Time (s)',
+                                    'packet_length': 'Packet Length (bytes)',
+                                    'protocol': 'Protocol',
+                                    'anomaly_score': 'Anomaly Score',
+                                    'anomaly': 'Is Anomaly'
+                                }),
+                                use_container_width=True
+                            )
+                        else:
+                            st.info("No high-risk samples detected (score >= 0.7)")
+                        
+                    else:
+                        st.error(f"API Error: {response.status_code} - {response.text}")
+                        
+                except requests.exceptions.Timeout:
+                    st.error("⏱ Request timeout. The API might be processing or unavailable.")
+                except requests.exceptions.RequestException as e:
+                    st.error(f"🔗 Connection error: {str(e)}")
+                except Exception as e:
+                    st.error(f"❌ Unexpected error: {str(e)}")
+    
+    # Show previous analysis if available
+    if 'predictions' in st.session_state and st.session_state.predictions:
+        st.subheader("📋 Previous Analysis Summary")
+        
+        last_predictions = st.session_state.predictions
+        last_time = st.session_state.get('last_analysis_time', 'Unknown')
+        
+        col1, col2, col3, col4 = st.columns(4)
+        
+        with col1:
+            st.metric("Last Analysis", str(last_time)[:19] if last_time != 'Unknown' else 'Unknown')
+        
+        with col2:
+            df = pd.DataFrame(last_predictions)
+            st.metric("Samples Analyzed", len(df))
+        
+        with col3:
+            anomalies = df['anomaly'].sum()
+            st.metric("Anomalies Found", anomalies)
+        
+        with col4:
+            avg_score = df['anomaly_score'].mean()
+            st.metric("Average Score", f"{avg_score:.3f}")
 
 
 # tabs/live_stream.py
 import streamlit as st
 import pandas as pd
 import requests
-import time
+import numpy as np
 import plotly.graph_objects as go
+import time
 from datetime import datetime
 
 def render(thresh, highlight_color, alerts_enabled):
-    st.header("🔴 Live DOS Anomaly Stream")
+    st.header("🔴 Live DOS Anomaly Detection Stream")
+    
+    API_URL = "https://mizzony-dos-anomaly-detection.hf.space"
     
     # Color mapping
     color_map = {
@@ -184,335 +269,442 @@ def render(thresh, highlight_color, alerts_enabled):
     
     selected_color = color_map[highlight_color]
     
-    # Auto-refresh controls
-    col1, col2, col3 = st.columns(3)
+    # Live monitoring controls
+    col1, col2, col3, col4 = st.columns(4)
+    
     with col1:
-        auto_refresh = st.checkbox("Auto Refresh", value=True)
+        auto_refresh = st.checkbox("Auto Refresh", value=False)
+    
     with col2:
-        refresh_interval = st.selectbox("Refresh Interval", [5, 10, 15, 30], index=1)
+        refresh_interval = st.selectbox("Refresh Interval (s)", [5, 10, 15, 30], index=1)
+    
     with col3:
-        if st.button("🔄 Manual Refresh"):
+        batch_size = st.selectbox("Batch Size", [5, 10, 15, 20], index=1)
+    
+    with col4:
+        if st.button("🔄 Generate New Batch"):
             st.rerun()
     
-    # Placeholder for live data
-    live_placeholder = st.empty()
-    chart_placeholder = st.empty()
+    # Initialize session state for live stream
+    if 'live_data' not in st.session_state:
+        st.session_state.live_data = []
     
-    try:
-        # Replace with your actual API endpoint
-        API_URL = "YOUR_API_ENDPOINT_HERE"
-        response = requests.get(f"{API_URL}?time_range=-5m")  # Last 5 minutes for live data
-        
-        if response.status_code == 200:
-            data = response.json()
+    if 'stream_active' not in st.session_state:
+        st.session_state.stream_active = False
+    
+    # Stream controls
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🚀 Start Live Stream"):
+            st.session_state.stream_active = True
+            st.success("Live stream started!")
+    
+    with col2:
+        if st.button("⏹ Stop Stream"):
+            st.session_state.stream_active = False
+            st.info("Live stream stopped.")
+    
+    # Generate and analyze live traffic
+    if st.session_state.stream_active or st.button("📊 Analyze Single Batch"):
+        with st.spinner(f"Analyzing {batch_size} traffic samples..."):
+            # Generate realistic traffic data
+            traffic_batch = []
+            current_time = datetime.now()
             
-            if data and len(data) > 0:
-                df = pd.DataFrame(data)
+            for i in range(batch_size):
+                # Simulate different types of traffic
+                if np.random.random() < 0.8:  # 80% normal traffic
+                    inter_arrival = np.random.uniform(0.05, 0.3)
+                    packet_len = np.random.randint(64, 1200)
+                    protocol = np.random.choice(['tcp', 'http', 'https'])
+                else:  # 20% suspicious traffic
+                    inter_arrival = np.random.uniform(0.001, 0.05)  # Fast packets
+                    packet_len = np.random.randint(1300, 1500)  # Large packets
+                    protocol = np.random.choice(['tcp', 'udp'])
                 
-                # Filter by threshold
-                filtered_df = df[df['anomaly_score'] >= thresh]
+                traffic_batch.append({
+                    "inter_arrival_time": round(inter_arrival, 4),
+                    "packet_length": packet_len,
+                    "protocol": protocol
+                })
+            
+            try:
+                # Make prediction
+                response = requests.post(
+                    f"{API_URL}/predict",
+                    headers={"Content-Type": "application/json"},
+                    json=traffic_batch,
+                    timeout=15
+                )
                 
-                with live_placeholder.container():
-                    # Live stats
+                if response.status_code == 200:
+                    predictions = response.json()
+                    
+                    # Combine with traffic data and add timestamps
+                    for i, (traffic, pred) in enumerate(zip(traffic_batch, predictions)):
+                        combined_sample = {
+                            **traffic,
+                            **pred,
+                            'timestamp': current_time,
+                            'sample_id': len(st.session_state.live_data) + i
+                        }
+                        st.session_state.live_data.append(combined_sample)
+                    
+                    # Keep only last 100 samples
+                    if len(st.session_state.live_data) > 100:
+                        st.session_state.live_data = st.session_state.live_data[-100:]
+                    
+                    # Create DataFrame for analysis
+                    df = pd.DataFrame(st.session_state.live_data)
+                    current_batch_df = pd.DataFrame(predictions)
+                    
+                    # Display live metrics
+                    st.subheader("📊 Live Stream Metrics")
+                    
                     col1, col2, col3, col4 = st.columns(4)
                     
                     with col1:
-                        st.metric("Live Records", len(df))
+                        st.metric("Total Samples", len(df))
                     
                     with col2:
-                        above_threshold = len(filtered_df)
-                        st.metric("Above Threshold", above_threshold)
+                        current_anomalies = current_batch_df['anomaly'].sum()
+                        st.metric("Current Batch Anomalies", current_anomalies)
                     
                     with col3:
-                        if len(df) > 0:
-                            latest_score = df['anomaly_score'].iloc[-1]
-                            st.metric("Latest Score", f"{latest_score:.3f}")
+                        above_threshold = len(current_batch_df[current_batch_df['anomaly_score'] >= thresh])
+                        st.metric("Above Threshold", above_threshold)
                     
                     with col4:
-                        anomaly_count = df['anomaly'].sum()
-                        st.metric("Live Anomalies", anomaly_count)
+                        if len(current_batch_df) > 0:
+                            max_score = current_batch_df['anomaly_score'].max()
+                            st.metric("Max Score in Batch", f"{max_score:.3f}")
                     
-                    # Alert section
+                    # Alert system
                     if alerts_enabled and above_threshold > 0:
-                        st.warning(f"🚨 {above_threshold} detections above threshold {thresh}!")
+                        st.error(f"🚨 ALERT: {above_threshold} samples above threshold {thresh}!")
                         
-                        # Show recent high-score detections
-                        recent_high = filtered_df.nlargest(5, 'anomaly_score')
-                        st.subheader("Recent High-Score Detections")
-                        
-                        for idx, row in recent_high.iterrows():
-                            alert_color = selected_color if row['anomaly_score'] >= thresh else "#CCCCCC"
+                        high_risk_samples = current_batch_df[current_batch_df['anomaly_score'] >= thresh]
+                        for idx, sample in high_risk_samples.iterrows():
+                            risk_level = "CRITICAL" if sample['anomaly_score'] >= 0.9 else "HIGH" if sample['anomaly_score'] >= 0.7 else "MEDIUM"
                             st.markdown(
                                 f"""
-                                <div style="padding: 10px; margin: 5px 0; border-left: 4px solid {alert_color}; background-color: #f9f9f9;">
-                                    <strong>Score: {row['anomaly_score']:.4f}</strong> | 
-                                    Anomaly: {'YES' if row['anomaly'] == 1 else 'NO'} | 
-                                    Risk: {'HIGH' if row['anomaly_score'] >= 0.8 else 'MEDIUM' if row['anomaly_score'] >= 0.6 else 'LOW'}
+                                <div style="padding: 10px; margin: 5px 0; border-left: 4px solid {selected_color}; background-color: #fff2f2;">
+                                    <strong>🔥 {risk_level} RISK</strong> - Score: {sample['anomaly_score']:.4f} | 
+                                    Anomaly: {'YES' if sample['anomaly'] == 1 else 'NO'}
                                 </div>
                                 """, 
                                 unsafe_allow_html=True
                             )
-                
-                # Live chart
-                with chart_placeholder:
-                    st.subheader("📊 Live Anomaly Score Feed")
                     
-                    # Create simulated timestamps for the chart
-                    timestamps = pd.date_range(end=datetime.now(), periods=len(df), freq='1min')
+                    # Live visualization
+                    st.subheader("📈 Live Traffic Analysis")
                     
-                    fig = go.Figure()
-                    
-                    # Add all scores
-                    fig.add_trace(go.Scatter(
-                        x=timestamps,
-                        y=df['anomaly_score'],
-                        mode='lines+markers',
-                        name='Anomaly Score',
-                        line=dict(color='blue', width=2),
-                        marker=dict(size=6)
-                    ))
-                    
-                    # Highlight above threshold
-                    above_thresh_mask = df['anomaly_score'] >= thresh
-                    if above_thresh_mask.any():
+                    if len(df) > 1:
+                        # Real-time score chart
+                        fig = go.Figure()
+                        
+                        # Plot all scores
                         fig.add_trace(go.Scatter(
-                            x=timestamps[above_thresh_mask],
-                            y=df['anomaly_score'][above_thresh_mask],
-                            mode='markers',
-                            name=f'Above Threshold ({thresh})',
-                            marker=dict(color=selected_color, size=10, symbol='diamond')
+                            x=list(range(len(df))),
+                            y=df['anomaly_score'],
+                            mode='lines+markers',
+                            name='Anomaly Score',
+                            line=dict(color='blue', width=2),
+                            marker=dict(size=4)
                         ))
+                        
+                        # Highlight current batch
+                        if len(df) >= batch_size:
+                            current_batch_x = list(range(len(df) - batch_size, len(df)))
+                            current_batch_y = df['anomaly_score'].tail(batch_size)
+                            
+                            fig.add_trace(go.Scatter(
+                                x=current_batch_x,
+                                y=current_batch_y,
+                                mode='markers',
+                                name='Current Batch',
+                                marker=dict(color='orange', size=8, symbol='diamond')
+                            ))
+                        
+                        # Highlight anomalies
+                        anomaly_mask = df['anomaly'] == 1
+                        if anomaly_mask.any():
+                            anomaly_indices = df.index[anomaly_mask]
+                            fig.add_trace(go.Scatter(
+                                x=anomaly_indices,
+                                y=df.loc[anomaly_indices, 'anomaly_score'],
+                                mode='markers',
+                                name='Detected Anomalies',
+                                marker=dict(color='red', size=10, symbol='x')
+                            ))
+                        
+                        # Add threshold line
+                        fig.add_hline(y=thresh, line_dash="dash", line_color="red",
+                                     annotation_text=f"Threshold: {thresh}")
+                        
+                        fig.update_layout(
+                            title="Live Anomaly Score Stream",
+                            xaxis_title="Sample Number",
+                            yaxis_title="Anomaly Score",
+                            hovermode='x unified',
+                            height=400
+                        )
+                        
+                        st.plotly_chart(fig, use_container_width=True)
+                        
+                        # Current batch details
+                        st.subheader("🔍 Current Batch Analysis")
+                        
+                        batch_traffic_df = pd.DataFrame(traffic_batch)
+                        combined_current = pd.concat([batch_traffic_df, current_batch_df], axis=1)
+                        
+                        # Show samples above threshold
+                        high_score_current = combined_current[combined_current['anomaly_score'] >= thresh]
+                        
+                        if not high_score_current.empty:
+                            st.write(f"*Samples above threshold ({thresh}):*")
+                            display_cols = ['inter_arrival_time', 'packet_length', 'protocol', 'anomaly_score', 'anomaly']
+                            st.dataframe(
+                                high_score_current[display_cols],
+                                use_container_width=True
+                            )
+                        else:
+                            st.info(f"No samples above threshold {thresh} in current batch.")
                     
-                    # Add threshold line
-                    fig.add_hline(y=thresh, line_dash="dash", line_color="red", 
-                                 annotation_text=f"Threshold: {thresh}")
+                else:
+                    st.error(f"API Error: {response.status_code}")
                     
-                    fig.update_layout(
-                        title="Live Anomaly Score Stream",
-                        xaxis_title="Time",
-                        yaxis_title="Anomaly Score",
-                        hovermode='x unified',
-                        height=400
-                    )
-                    
-                    st.plotly_chart(fig, use_container_width=True)
-                
-            else:
-                st.info("No live data available")
-                
-        else:
-            st.error(f"API Error: {response.status_code}")
-            
-    except Exception as e:
-        st.error(f"Error in live stream: {str(e)}")
+            except Exception as e:
+                st.error(f"Error in live analysis: {str(e)}")
     
     # Auto-refresh functionality
-    if auto_refresh:
+    if auto_refresh and st.session_state.stream_active:
         time.sleep(refresh_interval)
         st.rerun()
 
 
-# tabs/metrics.py
+# tabs/manual_entry.py
 import streamlit as st
-import pandas as pd
 import requests
-import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
+import json
 
-def render(thresh):
-    st.header("📈 DOS Detection Metrics")
+def render():
+    st.header("✏ Manual Traffic Entry & Analysis")
     
-    try:
-        # Replace with your actual API endpoint
-        API_URL = "YOUR_API_ENDPOINT_HERE"
-        response = requests.get(f"{API_URL}?time_range=-24h")  # Last 24 hours for metrics
+    API_URL = "https://mizzony-dos-anomaly-detection.hf.space"
+    
+    st.write("Enter network traffic parameters manually for anomaly detection analysis.")
+    
+    # Manual entry form
+    st.subheader("📝 Traffic Parameters")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        inter_arrival_time = st.number_input(
+            "Inter-arrival Time (seconds)", 
+            min_value=0.001, 
+            max_value=10.0, 
+            value=0.1, 
+            step=0.001,
+            format="%.3f",
+            help="Time between consecutive packets. Lower values may indicate DOS attacks."
+        )
         
-        if response.status_code == 200:
-            data = response.json()
+        packet_length = st.number_input(
+            "Packet Length (bytes)", 
+            min_value=64, 
+            max_value=1500, 
+            value=1000,
+            help="Size of the network packet. Large packets with fast arrival may be suspicious."
+        )
+    
+    with col2:
+        protocol = st.selectbox(
+            "Protocol", 
+            ["tcp", "udp", "http", "https", "dns", "icmp"],
+            help="Network protocol used"
+        )
+        
+        # Preset patterns
+        st.subheader("🎯 Quick Presets")
+        
+        preset = st.selectbox(
+            "Load Preset Pattern",
+            ["Custom", "Normal Web Traffic", "Potential DOS Attack", "Large File Transfer", "DNS Query", "Video Streaming"]
+        )
+        
+        if preset != "Custom":
+            if st.button("Load Preset"):
+                if preset == "Normal Web Traffic":
+                    st.session_state.manual_inter_arrival = 0.1
+                    st.session_state.manual_packet_length = 800
+                    st.session_state.manual_protocol = "http"
+                elif preset == "Potential DOS Attack":
+                    st.session_state.manual_inter_arrival = 0.005
+                    st.session_state.manual_packet_length = 1450
+                    st.session_state.manual_protocol = "tcp"
+                elif preset == "Large File Transfer":
+                    st.session_state.manual_inter_arrival = 0.02
+                    st.session_state.manual_packet_length = 1500
+                    st.session_state.manual_protocol = "tcp"
+                elif preset == "DNS Query":
+                    st.session_state.manual_inter_arrival = 0.5
+                    st.session_state.manual_packet_length = 128
+                    st.session_state.manual_protocol = "dns"
+                elif preset == "Video Streaming":
+                    st.session_state.manual_inter_arrival = 0.03
+                    st.session_state.manual_packet_length = 1200
+                    st.session_state.manual_protocol = "udp"
+                st.rerun()
+    
+    # Use session state values if available
+    if 'manual_inter_arrival' in st.session_state:
+        inter_arrival_time = st.session_state.manual_inter_arrival
+    if 'manual_packet_length' in st.session_state:
+        packet_length = st.session_state.manual_packet_length
+    if 'manual_protocol' in st.session_state:
+        protocol = st.session_state.manual_protocol
+    
+    # Batch entry option
+    st.subheader("📊 Batch Analysis")
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        num_samples = st.slider("Number of identical samples to analyze", 1, 20, 5)
+    
+    with col2:
+        add_variation = st.checkbox("Add slight variation to samples", value=True)
+    
+    # Analysis buttons
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        if st.button("🔍 Analyze Single Sample", type="primary"):
+            analyze_manual_traffic(API_URL, inter_arrival_time, packet_length, protocol, 1, False)
+    
+    with col2:
+        if st.button("📈 Analyze Batch"):
+            analyze_manual_traffic(API_URL, inter_arrival_time, packet_length, protocol, num_samples, add_variation)
+    
+    # JSON input option
+    st.subheader("📄 JSON Input")
+    
+    json_input = st.text_area(
+        "Enter JSON traffic data directly:",
+        value='[{"inter_arrival_time": 0.1, "packet_length": 1000, "protocol": "tcp"}]',
+        height=100,
+        help="Enter an array of traffic samples in JSON format"
+    )
+    
+    if st.button("🔍 Analyze JSON Input"):
+        try:
+            traffic_data = json.loads(json_input)
+            if isinstance(traffic_data, list):
+                analyze_json_traffic(API_URL, traffic_data)
+            else:
+                st.error("JSON input must be an array of traffic samples")
+        except json.JSONDecodeError as e:
+            st.error(f"Invalid JSON format: {str(e)}")
+
+def analyze_manual_traffic(api_url, inter_arrival, packet_len, protocol, num_samples, add_variation):
+    """Analyze manually entered traffic data"""
+    
+    traffic_data = []
+    
+    for i in range(num_samples):
+        if add_variation and num_samples > 1:
+            # Add ±10% variation
+            varied_inter_arrival = inter_arrival * (0.9 + 0.2 * (i / num_samples))
+            varied_packet_len = int(packet_len * (0.9 + 0.2 * (i / num_samples)))
+        else:
+            varied_inter_arrival = inter_arrival
+            varied_packet_len = packet_len
+        
+        traffic_data.append({
+            "inter_arrival_time": round(varied_inter_arrival, 4),
+            "packet_length": varied_packet_len,
+            "protocol": protocol
+        })
+    
+    analyze_json_traffic(api_url, traffic_data)
+
+def analyze_json_traffic(api_url, traffic_data):
+    """Analyze traffic data and display results"""
+    
+    with st.spinner(f"Analyzing {len(traffic_data)} traffic sample(s)..."):
+        try:
+            response = requests.post(
+                f"{api_url}/predict",
+                headers={"Content-Type": "application/json"},
+                json=traffic_data,
+                timeout=15
+            )
             
-            if data and len(data) > 0:
-                df = pd.DataFrame(data)
+            if response.status_code == 200:
+                predictions = response.json()
                 
-                # Calculate metrics
-                total_records = len(df)
-                anomaly_count = df['anomaly'].sum()
-                normal_count = total_records - anomaly_count
+                # Display results
+                st.success(f"✅ Analysis complete! Processed {len(predictions)} samples.")
                 
-                above_threshold = len(df[df['anomaly_score'] >= thresh])
-                avg_score = df['anomaly_score'].mean()
-                max_score = df['anomaly_score'].max()
-                min_score = df['anomaly_score'].min()
+                # Create results DataFrame
+                import pandas as pd
+                traffic_df = pd.DataFrame(traffic_data)
+                predictions_df = pd.DataFrame(predictions)
+                combined_df = pd.concat([traffic_df, predictions_df], axis=1)
                 
-                # Detection rate
-                detection_rate = (anomaly_count / total_records * 100) if total_records > 0 else 0
-                
-                # Metrics Dashboard
-                st.subheader("🎯 Key Performance Metrics")
-                
+                # Summary metrics
                 col1, col2, col3, col4 = st.columns(4)
                 
                 with col1:
-                    st.metric(
-                        "Detection Rate", 
-                        f"{detection_rate:.1f}%",
-                        delta=f"{anomaly_count} anomalies"
-                    )
+                    st.metric("Samples Analyzed", len(combined_df))
                 
                 with col2:
-                    st.metric(
-                        "Average Score", 
-                        f"{avg_score:.3f}",
-                        delta=f"Max: {max_score:.3f}"
-                    )
+                    anomaly_count = predictions_df['anomaly'].sum()
+                    st.metric("Anomalies Detected", anomaly_count)
                 
                 with col3:
-                    st.metric(
-                        "Above Threshold", 
-                        above_threshold,
-                        delta=f"Threshold: {thresh}"
-                    )
+                    avg_score = predictions_df['anomaly_score'].mean()
+                    st.metric("Average Score", f"{avg_score:.3f}")
                 
                 with col4:
-                    precision = anomaly_count / above_threshold if above_threshold > 0 else 0
-                    st.metric(
-                        "Precision", 
-                        f"{precision:.2f}",
-                        delta="True positives ratio"
-                    )
+                    max_score = predictions_df['anomaly_score'].max()
+                    st.metric("Max Score", f"{max_score:.3f}")
                 
-                # Score Statistics
-                st.subheader("📊 Score Statistics")
+                # Results interpretation
+                st.subheader("🎯 Analysis Results")
                 
-                col1, col2 = st.columns(2)
+                max_score_val = predictions_df['anomaly_score'].max()
                 
-                with col1:
-                    # Box plot for score distribution
-                    fig_box = px.box(df, y='anomaly_score', title="Anomaly Score Distribution")
-                    fig_box.add_hline(y=thresh, line_dash="dash", line_color="red", 
-                                     annotation_text=f"Threshold: {thresh}")
-                    st.plotly_chart(fig_box, use_container_width=True)
+                if max_score_val >= 0.8:
+                    st.error("🚨 HIGH RISK: Strong indicators of DOS attack patterns detected!")
+                elif max_score_val >= 0.6:
+                    st.warning("⚠ MEDIUM RISK: Suspicious traffic patterns detected.")
+                elif max_score_val >= 0.3:
+                    st.info("ℹ LOW RISK: Some unusual patterns but likely normal traffic.")
+                else:
+                    st.success("✅ NORMAL: Traffic patterns appear normal.")
                 
-                with col2:
-                    # Violin plot
-                    fig_violin = px.violin(df, y='anomaly_score', box=True, 
-                                          title="Score Density Distribution")
-                    fig_violin.add_hline(y=thresh, line_dash="dash", line_color="red")
-                    st.plotly_chart(fig_violin, use_container_width=True)
+                # Detailed results table
+                st.subheader("📋 Detailed Results")
                 
-                # Performance Metrics
-                st.subheader("⚡ Performance Analysis")
-                
-                # Create performance metrics
-                score_ranges = {
-                    'Low (0-0.3)': len(df[(df['anomaly_score'] >= 0) & (df['anomaly_score'] < 0.3)]),
-                    'Medium (0.3-0.6)': len(df[(df['anomaly_score'] >= 0.3) & (df['anomaly_score'] < 0.6)]),
-                    'High (0.6-0.8)': len(df[(df['anomaly_score'] >= 0.6) & (df['anomaly_score'] < 0.8)]),
-                    'Critical (0.8-1.0)': len(df[(df['anomaly_score'] >= 0.8) & (df['anomaly_score'] <= 1.0)])
-                }
-                
-                # Horizontal bar chart for score ranges
-                fig_ranges = px.bar(
-                    x=list(score_ranges.values()),
-                    y=list(score_ranges.keys()),
-                    orientation='h',
-                    title="Count by Score Range",
-                    color=list(score_ranges.values()),
-                    color_continuous_scale='Reds'
+                # Format the results for better display
+                display_df = combined_df.copy()
+                display_df['Risk Level'] = display_df['anomaly_score'].apply(
+                    lambda x: 'CRITICAL' if x >= 0.9 else 'HIGH' if x >= 0.8 else 'MEDIUM' if x >= 0.6 else 'LOW'
                 )
-                st.plotly_chart(fig_ranges, use_container_width=True)
+                display_df['Is Anomaly'] = display_df['anomaly'].apply(lambda x: 'YES' if x == 1 else 'NO')
                 
-                # Threshold Analysis
-                st.subheader("🎚 Threshold Analysis")
+                # Rename columns for better display
+                display_df = display_df.rename(columns={
+                    'inter_arrival_time': 'Inter-arrival Time (s)',
+                    'packet_length': 'Packet Length (bytes)',
+                    'protocol': 'Protocol',
+                    'anomaly_score': 'Anomaly Score'
+                })
                 
-                # Calculate metrics for different thresholds
-                thresholds = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9]
-                threshold_metrics = []
-                
-                for t in thresholds:
-                    above_t = len(df[df['anomaly_score'] >= t])
-                    true_positives = len(df[(df['anomaly_score'] >= t) & (df['anomaly'] == 1)])
-                    precision_t = true_positives / above_t if above_t > 0 else 0
-                    recall_t = true_positives / anomaly_count if anomaly_count > 0 else 0
-                    
-                    threshold_metrics.append({
-                        'threshold': t,
-                        'detections': above_t,
-                        'precision': precision_t,
-                        'recall': recall_t
-                    })
-                
-                threshold_df = pd.DataFrame(threshold_metrics)
-                
-                # Create subplot for threshold analysis
-                fig_thresh = make_subplots(
-                    rows=2, cols=2,
-                    subplot_titles=('Detections vs Threshold', 'Precision vs Threshold',
-                                  'Recall vs Threshold', 'F1-Score vs Threshold')
-                )
-                
-                # Detections
-                fig_thresh.add_trace(
-                    go.Scatter(x=threshold_df['threshold'], y=threshold_df['detections'],
-                              name='Detections', line=dict(color='blue')),
-                    row=1, col=1
-                )
-                
-                # Precision
-                fig_thresh.add_trace(
-                    go.Scatter(x=threshold_df['threshold'], y=threshold_df['precision'],
-                              name='Precision', line=dict(color='green')),
-                    row=1, col=2
-                )
-                
-                # Recall
-                fig_thresh.add_trace(
-                    go.Scatter(x=threshold_df['threshold'], y=threshold_df['recall'],
-                              name='Recall', line=dict(color='orange')),
-                    row=2, col=1
-                )
-                
-                # F1-Score
-                threshold_df['f1_score'] = 2 * (threshold_df['precision'] * threshold_df['recall']) / (threshold_df['precision'] + threshold_df['recall'])
-                threshold_df['f1_score'] = threshold_df['f1_score'].fillna(0)
-                
-                fig_thresh.add_trace(
-                    go.Scatter(x=threshold_df['threshold'], y=threshold_df['f1_score'],
-                              name='F1-Score', line=dict(color='red')),
-                    row=2, col=2
-                )
-                
-                # Add current threshold line to all subplots
-                for row in range(1, 3):
-                    for col in range(1, 3):
-                        fig_thresh.add_vline(x=thresh, line_dash="dash", line_color="red", row=row, col=col)
-                
-                fig_thresh.update_layout(height=600, showlegend=False, 
-                                       title_text="Threshold Performance Analysis")
-                st.plotly_chart(fig_thresh, use_container_width=True)
-                
-                # Summary table
-                st.subheader("📋 Summary Statistics")
-                
-                summary_data = {
-                    'Metric': ['Total Records', 'Anomalies Detected', 'Normal Records', 
-                              'Above Threshold', 'Average Score', 'Max Score', 'Min Score'],
-                    'Value': [total_records, anomaly_count, normal_count, above_threshold,
-                             f"{avg_score:.4f}", f"{max_score:.4f}", f"{min_score:.4f}"]
-                }
-                
-                summary_df = pd.DataFrame(summary_data)
-                st.dataframe(summary_df, use_container_width=True, hide_index=True)
-                
-            else:
-                st.warning("No data available for metrics calculation.")
-                
-        else:
-            st.error(f"API Error: {response.status_code}")
-            
-    except Exception as e:
-        st.error(f"Error loading metrics: {str(e)}")
-
-
-# Update your main app.py with the correct API URL
-# Replace "YOUR_API_ENDPOINT_HERE" in all the tab files with your actual API endpoint
+                st.dataframe(
+                    display_df[['Inter-arrival Time (s)', 'Packet Length (bytes)', 'Protocol', 'Anomaly Score', 'Is Anomaly', 'Risk Level']],
+                    use_container
