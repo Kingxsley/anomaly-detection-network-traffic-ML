@@ -61,6 +61,11 @@ def render(thresh, highlight_color, alerts_enabled):
         recent_records = records[-max_records_per_refresh:] if len(records) > max_records_per_refresh else records
         debug_log(f"Processing {len(recent_records)} out of {len(records)} total records (rate limiting)")
         
+        # Add protocol field to all records if missing (default to TCP)
+        for record in recent_records:
+            if "protocol" not in record or not record["protocol"]:
+                record["protocol"] = "tcp"
+        
         for i, row in enumerate(recent_records):
             debug_log(f"Processing record {i+1}/{len(recent_records)}")
             
@@ -77,23 +82,9 @@ def render(thresh, highlight_color, alerts_enabled):
                 debug_log(f"Skipping record {i+1} - missing fields: {missing_fields}")
                 continue
             
-            # Determine protocol based on destination port if not provided
-            protocol = "tcp"  # default
-            if "protocol" in row and row["protocol"]:
-                protocol = str(row["protocol"]).lower()
-            elif "dest_port" in row:
-                # Common protocol inference based on port
-                dest_port = int(row["dest_port"])
-                if dest_port == 53:
-                    protocol = "udp"  # DNS
-                elif dest_port in [80, 443, 8080, 8443]:
-                    protocol = "tcp"  # HTTP/HTTPS
-                elif dest_port in [21, 22, 23, 25, 110, 143, 993, 995]:
-                    protocol = "tcp"  # Common TCP services
-                else:
-                    protocol = "tcp"  # Default to TCP
-            
-            debug_log(f"Using protocol: {protocol} for dest_port: {row.get('dest_port', 'unknown')}")
+            # Determine protocol (should now be set to 'tcp' above)
+            protocol = str(row.get("protocol", "tcp")).lower()
+            debug_log(f"Using protocol: {protocol}")
             
             payload = [{
                 "inter_arrival_time": float(row["inter_arrival_time"]),
@@ -230,7 +221,17 @@ def render(thresh, highlight_color, alerts_enabled):
             if "timestamp" in attacks_df.columns:
                 attacks_df["timestamp"] = pd.to_datetime(attacks_df["timestamp"])
                 attacks_df = attacks_df.sort_values("timestamp", ascending=False)
-            st.dataframe(attacks_df[["timestamp", "label", "inter_arrival_time", "packet_length", "protocol"]])
+            
+            # Only show columns that exist
+            display_columns = []
+            for col in ["timestamp", "label", "inter_arrival_time", "packet_length", "protocol"]:
+                if col in attacks_df.columns:
+                    display_columns.append(col)
+            
+            if display_columns:
+                st.dataframe(attacks_df[display_columns])
+            else:
+                st.dataframe(attacks_df)  # Show all columns if none of the expected ones exist
     
     # Show full prediction table with highlights
     df = pd.DataFrame(st.session_state.predictions)
