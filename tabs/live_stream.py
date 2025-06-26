@@ -54,10 +54,20 @@ def render(thresh, highlight_color, alerts_enabled):
     new_predictions = []
     
     if records:
-        debug_log(f"Processing {len(records)} records...")
+        # RATE LIMITING: Process only a subset of records to avoid 429 errors
+        max_records_per_refresh = st.sidebar.slider("Max records per refresh", 1, 50, 10)
         
-        for i, row in enumerate(records):
-            debug_log(f"Processing record {i+1}/{len(records)}")
+        # Process only the most recent records
+        recent_records = records[-max_records_per_refresh:] if len(records) > max_records_per_refresh else records
+        debug_log(f"Processing {len(recent_records)} out of {len(records)} total records (rate limiting)")
+        
+        for i, row in enumerate(recent_records):
+            debug_log(f"Processing record {i+1}/{len(recent_records)}")
+            
+            # Rate limiting: Add delay between requests
+            if i > 0:  # Skip delay for first request
+                time.sleep(0.5)  # 500ms delay between API calls
+                debug_log("Applied rate limiting delay")
             
             # Validate required fields
             required_fields = ["inter_arrival_time", "packet_length"]
@@ -100,6 +110,15 @@ def render(thresh, highlight_color, alerts_enabled):
                 
                 debug_log(f"API response time: {api_time:.2f}s")
                 debug_log(f"API status: {response.status_code}")
+                
+                # Handle rate limiting
+                if response.status_code == 429:
+                    debug_log("🚫 Rate limited - waiting 2 seconds...")
+                    st.warning(f"⏳ Rate limited on record {i+1}, waiting...")
+                    time.sleep(2)
+                    # Retry once
+                    response = requests.post(API_URL, json=payload, timeout=20)
+                    debug_log(f"Retry status: {response.status_code}")
                 
                 if response.status_code == 200 and response.text.strip():
                     try:
