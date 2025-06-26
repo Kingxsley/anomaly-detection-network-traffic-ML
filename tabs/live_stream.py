@@ -13,7 +13,7 @@ def render(thresh, highlight_color, alerts_enabled):
     debug_mode = st.sidebar.checkbox("🐛 Debug Mode", value=False)
     
     st_autorefresh(interval=60000, key="live_refresh")  # Refresh every 60s
-    st.title("🚨 Live DoS Stream Dashboard")
+    st.title("Live DoS Stream Dashboard")
     
     # Add refresh timestamp
     if debug_mode:
