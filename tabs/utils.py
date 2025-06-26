@@ -8,7 +8,7 @@ import warnings
 import time
 
 # --- Secrets ---
-API_URL = "https://mizzony-dos-anomaly-detection.hf.space"  # Updated for DoS
+API_URL = st.secrets.get("API_URL", "https://mizzony-dos-anomaly-detection.hf.space")  # Updated for DoS
 DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7")  # Updated for DoS
 INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "https://us-east-1-1.aws.cloud2.influxdata.com")  # Updated for DoS
 INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "Anormally Detection")  # Updated for DoS
@@ -114,19 +114,23 @@ def log_to_sqlitecloud(record):
 # Function to fetch real-time DoS data from InfluxDB
 def get_dos_data():
     try:
-        INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
-        INFLUXDB_TOKEN = "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg=="
-        INFLUXDB_ORG = "Anormally Detection"
-        INFLUXDB_BUCKET = "realtime"
+        if not INFLUXDB_URL:
+            raise ValueError("No host specified.")
 
+        # Get current UTC time (as per InfluxDB's expectation)
         current_time = datetime.utcnow()
-        start_time = current_time - timedelta(minutes=30)  # 👈 widened window
-        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
-        end_str = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+
+        # Set the time range (e.g., 5 minutes ago to now)
+        start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
+        end_time = current_time  # Now
+
+        # Convert the start and end times to the ISO 8601 format for InfluxDB
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
+        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
 
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str})
+        |> range(start: {start_str}, stop: {end_str}) 
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -134,9 +138,11 @@ def get_dos_data():
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
+        
+        # Ensure that there are no comments or invalid characters
+        print(f"Query being sent to InfluxDB: {query}")
 
-        print("🟡 Query being sent to InfluxDB:\n", query)
-
+        # Execute the query and retrieve data from InfluxDB
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
@@ -151,16 +157,14 @@ def get_dos_data():
                         "dest_port": record.values.get("dest_port", "unknown")
                     })
 
-        print(f"✅ Retrieved {len(rows)} rows from InfluxDB.")
-        if rows:
-            print("📌 First row sample:", rows[0])
-        else:
-            print("❌ No data found in the last 30 minutes.")
+            return rows
 
-        return rows
-
+    except ValueError as ve:
+        st.error(f"Value Error: {ve}")  # Handle missing URL error
+        return []
     except Exception as e:
-        print(f"🔥 Error fetching from InfluxDB: {e}")
+        # Catch other errors and display a warning
+        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
         return []
 
 # --- Historical Data ---
