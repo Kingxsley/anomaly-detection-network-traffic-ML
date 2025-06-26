@@ -8,7 +8,7 @@ import warnings
 import time
 
 # --- Secrets ---
-API_URL = st.secrets.get("API_URL", "https://huggingface.co/spaces/mizzony/DoS_Anomaly_Detection")  # Updated for DoS
+API_URL = st.secrets.get("API_URL", "https://huggingface.co/spaces/mizzony/DoS_Anomaly_Detection/api/predict")  # Updated for DoS
 DISCORD_WEBHOOK = st.secrets.get("DISCORD_WEBHOOK", "https://discord.com/api/webhooks/1383262825534984243/mMaPgCDV7tgEMsT_-5ABWpnxMJB746kM_hQqFa2F87lRKeBqCx9vyGY6sEyoY4NnZ7d7")  # Updated for DoS
 INFLUXDB_URL = st.secrets.get("INFLUXDB_URL", "https://us-east-1-1.aws.cloud2.influxdata.com")  # Updated for DoS
 INFLUXDB_ORG = st.secrets.get("INFLUXDB_ORG", "Anormally Detection")  # Updated for DoS
