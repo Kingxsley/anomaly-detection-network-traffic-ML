@@ -15,7 +15,7 @@ def render(time_range, time_range_query_map):
     
     try:
         # Replace with your actual API endpoint
-        API_URL = "YOUR_API_ENDPOINT_HERE"  # Update this with your actual API URL
+        API_URL = "https://mizzony-dos-anomaly-detection.hf.space/predict“  # Update this with your actual API URL
         response = requests.get(f"{API_URL}?time_range={query}")
         
         if response.status_code == 200:
