@@ -707,4 +707,4 @@ def analyze_json_traffic(api_url, traffic_data):
                 
                 st.dataframe(
                     display_df[['Inter-arrival Time (s)', 'Packet Length (bytes)', 'Protocol', 'Anomaly Score', 'Is Anomaly', 'Risk Level']],
-                    use_container
+                    use_container)
