@@ -112,25 +112,26 @@ def log_to_sqlitecloud(record):
 
 # --- Get Real-time DoS Data ---
 # Function to fetch real-time DoS data from InfluxDB
+from influxdb_client import InfluxDBClient
+from datetime import datetime, timedelta
+
 def get_dos_data():
     try:
-        if not INFLUXDB_URL:
-            raise ValueError("No host specified.")
+        INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
+        INFLUXDB_TOKEN = "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg=="
+        INFLUXDB_ORG = "Anormally Detection"
+        INFLUXDB_BUCKET = "realtime"
 
-        # Get current UTC time (as per InfluxDB's expectation)
-        current_time = datetime.utcnow()
+        # Get the time range
+        now = datetime.utcnow()
+        start_time = now - timedelta(minutes=5)
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_str = now.strftime('%Y-%m-%dT%H:%M:%SZ')
 
-        # Set the time range (e.g., 5 minutes ago to now)
-        start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
-        end_time = current_time  # Now
-
-        # Convert the start and end times to the ISO 8601 format for InfluxDB
-        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
-        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
-
+        # Flux query
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str}) 
+        |> range(start: {start_str}, stop: {end_str})
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -138,34 +139,53 @@ def get_dos_data():
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-        
-        # Ensure that there are no comments or invalid characters
-        print(f"Query being sent to InfluxDB: {query}")
 
-        # Execute the query and retrieve data from InfluxDB
+        rows = []
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
-            rows = []
             for table in tables:
                 for record in table.records:
+                    values = record.values
+                    protocol = infer_protocol(values.get("source_port"), values.get("dest_port"))
+
                     rows.append({
                         "timestamp": record.get_time().strftime("%Y-%m-%d %H:%M:%S"),
-                        "inter_arrival_time": record.values.get("inter_arrival_time", 0.0),
-                        "packet_length": record.values.get("packet_length", 0.0),
-                        "packet_rate": record.values.get("packet_rate", 0.0),
-                        "source_port": record.values.get("source_port", "unknown"),
-                        "dest_port": record.values.get("dest_port", "unknown")
+                        "inter_arrival_time": float(values.get("inter_arrival_time", 0.0)),
+                        "packet_length": int(values.get("packet_length", 0)),
+                        "packet_rate": float(values.get("packet_rate", 0.0)),
+                        "source_port": int(values.get("source_port", 0)),
+                        "dest_port": int(values.get("dest_port", 0)),
+                        "protocol": protocol
                     })
 
-            return rows
+        print(f"✅ Retrieved {len(rows)} rows from InfluxDB.")
+        return rows
 
-    except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
-        return []
     except Exception as e:
-        # Catch other errors and display a warning
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        print(f"❌ InfluxDB fetch error: {e}")
         return []
+
+
+def infer_protocol(source_port, dest_port):
+    # Infer protocol based on port number
+    known_ports = {
+        53: "DNS",
+        80: "HTTP",
+        443: "HTTPS",
+        123: "NTP",
+        22: "SSH",
+        25: "SMTP",
+        110: "POP3",
+        143: "IMAP",
+        161: "SNMP"
+    }
+
+    for port in [source_port, dest_port]:
+        if port in known_ports:
+            return known_ports[port]
+
+    return "TCP"  # default fallback
+
 
 # --- Historical Data ---
 @st.cache_data(ttl=600)
