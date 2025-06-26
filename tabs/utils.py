@@ -114,23 +114,19 @@ def log_to_sqlitecloud(record):
 # Function to fetch real-time DoS data from InfluxDB
 def get_dos_data():
     try:
-        if not INFLUXDB_URL:
-            raise ValueError("No host specified.")
+        INFLUXDB_URL = "https://us-east-1-1.aws.cloud2.influxdata.com"
+        INFLUXDB_TOKEN = "DfmvA8hl5EeOcpR-d6c_ep6dRtSRbEcEM_Zqp8-1746dURtVqMDGni4rRNQbHouhqmdC7t9Kj6Y-AyOjbBg-zg=="
+        INFLUXDB_ORG = "Anormally Detection"
+        INFLUXDB_BUCKET = "realtime"
 
-        # Get current UTC time (as per InfluxDB's expectation)
         current_time = datetime.utcnow()
-
-        # Set the time range (e.g., 5 minutes ago to now)
-        start_time = current_time - timedelta(minutes=5)  # 5 minutes before now
-        end_time = current_time  # Now
-
-        # Convert the start and end times to the ISO 8601 format for InfluxDB
-        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:00:00Z'
-        end_str = end_time.strftime('%Y-%m-%dT%H:%M:%SZ')  # '2025-06-25T12:05:00Z'
+        start_time = current_time - timedelta(minutes=30)  # 👈 widened window
+        start_str = start_time.strftime('%Y-%m-%dT%H:%M:%SZ')
+        end_str = current_time.strftime('%Y-%m-%dT%H:%M:%SZ')
 
         query = f'''
         from(bucket: "{INFLUXDB_BUCKET}")
-        |> range(start: {start_str}, stop: {end_str}) 
+        |> range(start: {start_str}, stop: {end_str})
         |> filter(fn: (r) => r._measurement == "network_traffic")
         |> filter(fn: (r) => r._field == "inter_arrival_time" or r._field == "packet_length"
                             or r._field == "packet_rate" or r._field == "source_port"
@@ -138,11 +134,9 @@ def get_dos_data():
         |> pivot(rowKey: ["_time"], columnKey: ["_field"], valueColumn: "_value")
         |> sort(columns: ["_time"], desc: false)
         '''
-        
-        # Ensure that there are no comments or invalid characters
-        print(f"Query being sent to InfluxDB: {query}")
 
-        # Execute the query and retrieve data from InfluxDB
+        print("🟡 Query being sent to InfluxDB:\n", query)
+
         with InfluxDBClient(url=INFLUXDB_URL, token=INFLUXDB_TOKEN, org=INFLUXDB_ORG) as client:
             tables = client.query_api().query(query)
             rows = []
@@ -157,14 +151,16 @@ def get_dos_data():
                         "dest_port": record.values.get("dest_port", "unknown")
                     })
 
-            return rows
+        print(f"✅ Retrieved {len(rows)} rows from InfluxDB.")
+        if rows:
+            print("📌 First row sample:", rows[0])
+        else:
+            print("❌ No data found in the last 30 minutes.")
 
-    except ValueError as ve:
-        st.error(f"Value Error: {ve}")  # Handle missing URL error
-        return []
+        return rows
+
     except Exception as e:
-        # Catch other errors and display a warning
-        st.warning(f"Failed to fetch live DoS data from InfluxDB: {e}")
+        print(f"🔥 Error fetching from InfluxDB: {e}")
         return []
 
 # --- Historical Data ---
