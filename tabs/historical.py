@@ -31,9 +31,9 @@ def render(thresh, highlight_color):
     
     # Show selected time range
     with col2:
-        #st.write(f"*Selected:* {time_range}")
+        st.write(f"*Selected:* {time_range}")
     with col3:
-        #st.write(f"*Query:* {query_duration}")
+        st.write(f"*Query:* {query_duration}")
     
     # Add data sampling option for large datasets
     st.subheader("Data Processing Options")
@@ -79,7 +79,7 @@ def render(thresh, highlight_color):
         
         # Show original data size
         original_size = len(df)
-        #st.info(f"Original dataset size: {original_size:,} rows")
+        st.info(f"Original dataset size: {original_size:,} rows")
         
         # Apply row limiting if specified
         if max_rows > 0 and len(df) > max_rows:
@@ -92,7 +92,7 @@ def render(thresh, highlight_color):
                 step = len(df) // max_rows
                 df = df.iloc[::step][:max_rows]
             
-            #st.warning(f"Displaying {len(df):,} rows out of {original_size:,} total rows")
+            st.warning(f"Displaying {len(df):,} rows out of {original_size:,} total rows")
         
         # Use existing anomaly data (no need to generate synthetic data)
         # Map is_anomaly to label for consistency with charts
