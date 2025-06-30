@@ -30,17 +30,17 @@ def render(thresh, highlight_color):
     query_duration = time_range_query_map.get(time_range, "-24h")
     
     # Show selected time range
-   # with col2:
-       # st.write(f"*Selected:* {time_range}")
-   # with col3:
-      #  st.write(f"*Query:* {query_duration}")
+    with col2:
+        st.write(f"*Selected:* {time_range}")
+    with col3:
+        st.write(f"*Query:* {query_duration}")
     
     # Add data sampling option for large datasets
     st.subheader("Data Processing Options")
     col1, col2 = st.columns(2)
     with col1:
         max_rows = st.number_input(
-            "Max rows to display", 
+            "Max rows to display (0 = all)", 
             min_value=0, 
             max_value=10000, 
             value=100,
@@ -58,7 +58,7 @@ def render(thresh, highlight_color):
     try:
         with st.spinner("Loading historical data..."):
             df = load_predictions_from_sqlitecloud(time_window=query_duration)
-        st.success()
+        st.success(f"Data loaded successfully!")
     except Exception as e:
         st.error(f"Error loading data: {str(e)}")
         st.write("Please check your data source and try again.")
@@ -78,8 +78,8 @@ def render(thresh, highlight_color):
             return
         
         # Show original data size
-        #original_size = len(df)
-       # st.info(f"Original dataset size: {original_size:,} rows")
+        original_size = len(df)
+        st.info(f"Original dataset size: {original_size:,} rows")
         
         # Apply row limiting if specified
         if max_rows > 0 and len(df) > max_rows:
@@ -92,7 +92,7 @@ def render(thresh, highlight_color):
                 step = len(df) // max_rows
                 df = df.iloc[::step][:max_rows]
             
-            #st.warning(f"Displaying {len(df):,} rows out of {original_size:,} total rows")
+            st.warning(f"Displaying {len(df):,} rows out of {original_size:,} total rows")
         
         # Use existing anomaly data (no need to generate synthetic data)
         # Map is_anomaly to label for consistency with charts
